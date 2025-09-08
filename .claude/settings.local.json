@@ -6,7 +6,11 @@
       "Bash(mkdir:*)",
       "Bash(make test:*)",
       "Bash(forge:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm install)",
+      "Bash(npx hardhat:*)",
+      "Bash(npm test)",
+      "Bash(make deploy-local:*)"
     ],
     "deny": []
   }
