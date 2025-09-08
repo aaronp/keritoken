@@ -7,25 +7,31 @@ This document outlines the step-by-step process for launching an on-chain auctio
 - [X] Base network access (testnet or mainnet)
 - [X] ETH for gas fees on Base
 - [X] Development environment setup (Hardhat/Foundry)
-- [ ] Base RPC endpoint
-- [ ] Wallet with deployment permissions
+- [X] Base RPC endpoint
+- [X] Wallet with deployment permissions
 
 ## Phase 1: Smart Contract Development & Testing
 
 ### 1.1 Contract Development
 - [ ] Implement ERC20 bond token contract with minting capabilities
-- [ ] Implement auction contract with commit-reveal mechanism
+- [ ] Implement auction contract with encrypted bidding mechanism
+- [ ] Add issuer public key storage for bid encryption
+- [ ] Implement encrypted bid submission with commitment hash
+- [ ] Create off-chain encryption/decryption utilities
 - [ ] Implement stablecoin interface (or use existing USDC on Base)
 - [ ] Add access control for minter role management
 - [ ] Implement pro-rata allocation logic for margin bids
 
 ### 1.2 Local Testing
 - [ ] Write comprehensive unit tests for all contracts
-- [ ] Test commit-reveal mechanism
+- [ ] Test encrypted bid submission and storage
+- [ ] Test commitment hash verification during reveal
+- [ ] Test issuer's ability to decrypt bids off-chain
+- [ ] Verify bid privacy from other participants
 - [ ] Test bid sorting and clearing price calculation
 - [ ] Test pro-rata allocation at margin
 - [ ] Test claim mechanism and token transfers
-- [ ] Test edge cases (no bids, all bids below minimum, etc.)
+- [ ] Test edge cases (no bids, all bids below minimum, invalid encryption, etc.)
 
 ## Phase 2: Testnet Deployment
 
@@ -46,9 +52,12 @@ This document outlines the step-by-step process for launching an on-chain auctio
   - Settlement window
 
 ### 2.3 Testnet Auction Simulation
+- [ ] Generate and distribute issuer RSA key pair
 - [ ] Run test auction with multiple participants
-- [ ] Test commit phase with various bid submissions
-- [ ] Test reveal phase and bid validation
+- [ ] Test encrypted bid submissions in commit phase
+- [ ] Verify issuer can decrypt and monitor bids in real-time
+- [ ] Test reveal phase and commitment validation
+- [ ] Ensure other participants cannot see bid details
 - [ ] Test finalization and clearing price calculation
 - [ ] Test claim process and token distribution
 - [ ] Monitor gas costs and optimize if needed
@@ -57,6 +66,9 @@ This document outlines the step-by-step process for launching an on-chain auctio
 
 ### 3.1 Security Review
 - [ ] Internal code review
+- [ ] Review encryption implementation and key management
+- [ ] Verify bid privacy and prevent information leakage
+- [ ] Test resistance to front-running attacks
 - [ ] Run automated security tools (Slither, Mythril)
 - [ ] Consider professional audit for production deployment
 - [ ] Implement emergency pause mechanism if needed
@@ -97,12 +109,18 @@ This document outlines the step-by-step process for launching an on-chain auctio
 
 ### 6.1 Pre-Auction
 - [ ] Announce auction to potential participants
-- [ ] Provide documentation and participation guides
+- [ ] Publish issuer's public key for bid encryption
+- [ ] Provide encryption utilities and documentation
+- [ ] Share participation guides with encryption examples
+- [ ] Set up issuer monitoring system for decrypting bids
 - [ ] Set up support channels for participants
 - [ ] Monitor contract state and readiness
 
 ### 6.2 Commit Phase
-- [ ] Monitor bid submissions
+- [ ] Monitor encrypted bid submissions
+- [ ] Decrypt and analyze incoming bids (issuer only)
+- [ ] Track participation rates and bid values
+- [ ] Ensure bid encryption is working correctly
 - [ ] Track gas prices on Base
 - [ ] Provide support to participants
 - [ ] Ensure no technical issues
@@ -148,10 +166,12 @@ This document outlines the step-by-step process for launching an on-chain auctio
 ## Key Considerations
 
 1. **Gas Optimization**: Base has lower fees than Ethereum mainnet, but still optimize for large number of participants
-2. **Timing**: Consider time zones when setting auction phases
-3. **Communication**: Clear documentation and support are crucial for participation
-4. **Backup Plans**: Have procedures for technical issues or failed transactions
-5. **Regulatory**: Ensure all legal requirements are met before launch
+2. **Encryption**: Ensure proper key management and secure storage of issuer's private key
+3. **Privacy**: Verify that bid details remain private from other participants during auction
+4. **Timing**: Consider time zones when setting auction phases
+5. **Communication**: Clear documentation on encryption process is crucial for participation
+6. **Backup Plans**: Have procedures for technical issues, failed transactions, or encryption problems
+7. **Regulatory**: Ensure all legal requirements are met before launch
 
 ## Emergency Procedures
 
