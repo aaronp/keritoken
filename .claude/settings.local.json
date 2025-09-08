@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.base.org)",
+      "WebFetch(domain:docs.base.org)",
+      "Bash(mkdir:*)",
+      "Bash(make test:*)",
+      "Bash(forge:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}
