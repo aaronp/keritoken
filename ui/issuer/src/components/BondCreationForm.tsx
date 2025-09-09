@@ -75,9 +75,9 @@ export function BondCreationForm() {
 
   if (deployedAddress) {
     return (
-      <Card className="border-green-200 bg-green-50">
+      <Card className="border-primary bg-primary/5">
         <CardHeader>
-          <CardTitle className="text-green-800 flex items-center space-x-2">
+          <CardTitle className="text-primary flex items-center space-x-2">
             <TrendingUp className="h-5 w-5" />
             <span>Bond Token Deployed Successfully!</span>
           </CardTitle>
@@ -94,11 +94,11 @@ export function BondCreationForm() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Token Name</Label>
-              <p className="text-sm font-medium">{formData.name}</p>
+              <p className="text-sm font-medium text-foreground">{formData.name}</p>
             </div>
             <div>
               <Label>Symbol</Label>
-              <p className="text-sm font-medium">{formData.symbol}</p>
+              <p className="text-sm font-medium text-foreground">{formData.symbol}</p>
             </div>
           </div>
           <Button 
@@ -243,28 +243,28 @@ export function BondCreationForm() {
 
       {/* Summary Card */}
       {isFormValid() && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-secondary border-secondary">
           <CardHeader>
-            <CardTitle className="text-blue-800 text-lg">Bond Summary</CardTitle>
+            <CardTitle className="text-secondary-foreground text-lg">Bond Summary</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <Label className="text-blue-700">Annual Yield</Label>
-              <p className="font-semibold">{formData.couponRate}%</p>
+              <Label className="text-muted-foreground">Annual Yield</Label>
+              <p className="font-semibold text-foreground">{formData.couponRate}%</p>
             </div>
             <div>
-              <Label className="text-blue-700">Total Value</Label>
-              <p className="font-semibold">
+              <Label className="text-muted-foreground">Total Value</Label>
+              <p className="font-semibold text-foreground">
                 ${(parseFloat(formData.maxSupply || '0') * parseFloat(formData.faceValue || '0')).toLocaleString()}
               </p>
             </div>
             <div>
-              <Label className="text-blue-700">Term</Label>
-              <p className="font-semibold">{formData.maturityMonths} months</p>
+              <Label className="text-muted-foreground">Term</Label>
+              <p className="font-semibold text-foreground">{formData.maturityMonths} months</p>
             </div>
             <div>
-              <Label className="text-blue-700">Maturity</Label>
-              <p className="font-semibold">{calculateMaturityDate()}</p>
+              <Label className="text-muted-foreground">Maturity</Label>
+              <p className="font-semibold text-foreground">{calculateMaturityDate()}</p>
             </div>
           </CardContent>
         </Card>

@@ -395,28 +395,28 @@ export function AuctionCreationForm() {
 
       {/* Summary */}
       {isFormValid() && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-secondary border-secondary">
           <CardHeader>
-            <CardTitle className="text-blue-800 text-lg">Auction Summary</CardTitle>
+            <CardTitle className="text-secondary-foreground text-lg">Auction Summary</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <Label className="text-blue-700">Total Bonds</Label>
-              <p className="font-semibold">{formData.bondSupply} bonds</p>
+              <Label className="text-muted-foreground">Total Bonds</Label>
+              <p className="font-semibold text-foreground">{formData.bondSupply} bonds</p>
             </div>
             <div>
-              <Label className="text-blue-700">Price Range</Label>
-              <p className="font-semibold">${formData.minPrice} - ${formData.maxPrice}</p>
+              <Label className="text-muted-foreground">Price Range</Label>
+              <p className="font-semibold text-foreground">${formData.minPrice} - ${formData.maxPrice}</p>
             </div>
             <div>
-              <Label className="text-blue-700">Max Value</Label>
-              <p className="font-semibold">
+              <Label className="text-muted-foreground">Max Value</Label>
+              <p className="font-semibold text-foreground">
                 ${(parseFloat(formData.bondSupply || '0') * parseFloat(formData.maxPrice || '0')).toLocaleString()}
               </p>
             </div>
             <div>
-              <Label className="text-blue-700">Duration</Label>
-              <p className="font-semibold">
+              <Label className="text-muted-foreground">Duration</Label>
+              <p className="font-semibold text-foreground">
                 {parseInt(formData.commitDays) + parseInt(formData.revealDays)} days total
               </p>
             </div>

@@ -112,7 +112,7 @@ export function WalletConnect() {
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <div className="w-3 h-3 bg-primary rounded-full"></div>
             <div>
               <p className="font-semibold">{formatAddress(wallet.address)}</p>
               <p className="text-sm text-muted-foreground">
