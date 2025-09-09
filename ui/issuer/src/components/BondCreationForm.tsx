@@ -79,8 +79,13 @@ export function BondCreationForm() {
       const deployer = new ContractDeployer(signer)
       
       // Calculate maturity date timestamp
+      const maturityMonths = parseInt(formData.maturityMonths)
+      if (isNaN(maturityMonths) || maturityMonths <= 0) {
+        throw new Error('Invalid maturity months')
+      }
+      
       const maturityDate = new Date()
-      maturityDate.setMonth(maturityDate.getMonth() + parseInt(formData.maturityMonths))
+      maturityDate.setMonth(maturityDate.getMonth() + maturityMonths)
       const maturityTimestamp = Math.floor(maturityDate.getTime() / 1000)
       
       console.log('Starting bond token deployment...', {

@@ -1,4 +1,5 @@
 import { ethers } from 'ethers'
+import { loadBondTokenArtifact, loadBondAuctionArtifact } from './contractArtifacts'
 
 // Contract ABIs - These would typically be imported from your compiled contracts
 export const BOND_TOKEN_ABI = [
@@ -64,33 +65,42 @@ export class ContractDeployer {
     couponRate: number
   }) {
     try {
-      // Get the bytecode from the parent project's artifacts
-      const response = await fetch('/contracts/BondToken.json')
+      // Load the contract artifact
+      console.log('Loading BondToken contract artifact...')
       
-      if (!response.ok) {
-        throw new Error(`Failed to load BondToken artifacts: ${response.status} ${response.statusText}. Make sure contract artifacts are available in public/contracts/`)
-      }
+      const artifact = await loadBondTokenArtifact()
       
-      const text = await response.text()
-      
-      // Check if we got HTML instead of JSON (404 page)
-      if (text.trim().startsWith('<!doctype') || text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-        throw new Error('Contract artifacts not found. Run "make test" in parent directory and copy artifacts to public/contracts/')
-      }
-      
-      let artifact
-      try {
-        artifact = JSON.parse(text)
-      } catch (parseError) {
-        throw new Error(`Invalid contract artifact JSON: ${parseError}`)
+      if (!artifact) {
+        throw new Error('Failed to load BondToken artifact')
       }
       
       const { abi, bytecode } = artifact
       
-      if (!bytecode || bytecode === '0x') {
+      if (!abi || !bytecode) {
+        throw new Error('Invalid contract artifact: missing ABI or bytecode')
+      }
+      
+      if (bytecode === '0x' || !bytecode) {
         throw new Error('Contract bytecode is empty. Please recompile contracts with "make test"')
       }
       
+      // Validate parameters
+      if (!params.name || !params.symbol) {
+        throw new Error('Bond name and symbol are required')
+      }
+      if (!params.maxSupply || parseFloat(params.maxSupply) <= 0) {
+        throw new Error('Max supply must be greater than 0')
+      }
+      if (!params.faceValue || params.faceValue <= 0) {
+        throw new Error('Face value must be greater than 0')
+      }
+      if (!params.couponRate || params.couponRate < 0) {
+        throw new Error('Coupon rate must be 0 or greater')
+      }
+      if (!params.maturityDate || params.maturityDate <= Math.floor(Date.now() / 1000)) {
+        throw new Error('Maturity date must be in the future')
+      }
+
       // Convert parameters to blockchain format
       const maxSupplyWei = ethers.parseEther(params.maxSupply)
       const faceValueWei = ethers.parseEther(params.faceValue.toString())
@@ -99,15 +109,24 @@ export class ContractDeployer {
       console.log('Deploying BondToken with parameters:', {
         name: params.name,
         symbol: params.symbol,
-        maxSupply: maxSupplyWei.toString(),
+        maxSupply: params.maxSupply,
+        maxSupplyWei: maxSupplyWei.toString(),
         maturityDate: params.maturityDate,
-        faceValue: faceValueWei.toString(),
-        couponRate: couponRateBps
+        maturityDateReadable: new Date(params.maturityDate * 1000).toLocaleString(),
+        faceValue: params.faceValue,
+        faceValueWei: faceValueWei.toString(),
+        couponRate: params.couponRate,
+        couponRateBps: couponRateBps
       })
       
       // Create contract factory and deploy
       const contractFactory = new ethers.ContractFactory(abi, bytecode, this.signer)
       
+      // Use a fixed gas limit for now
+      const gasLimit = 3000000
+      
+      console.log('Using gas limit:', gasLimit)
+
       const contract = await contractFactory.deploy(
         params.name,
         params.symbol,
@@ -116,7 +135,7 @@ export class ContractDeployer {
         faceValueWei,
         couponRateBps,
         {
-          gasLimit: 3000000 // Generous gas limit
+          gasLimit: gasLimit
         }
       )
       
@@ -150,6 +169,12 @@ export class ContractDeployer {
       }
     } catch (error) {
       console.error('Bond token deployment failed:', error)
+      
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Cannot load contract artifacts. Make sure the dev server is running and try refreshing the page.')
+      }
+      
       throw error
     }
   }

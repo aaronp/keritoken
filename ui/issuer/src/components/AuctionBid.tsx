@@ -107,15 +107,48 @@ export function AuctionBid({
   }
 
   const encryptBid = async (price: string, quantity: string, salt: string): Promise<Uint8Array> => {
-    // Simulate RSA encryption with the issuer's public key
-    // In a real implementation, this would use actual RSA encryption with issuerPublicKey
-    
-    // Mock encryption - create shorter, contract-compatible data
-    // In production, use actual RSA encryption with issuerPublicKey
-    const mockEncrypted = `bid:${price}:${quantity}:${salt}:${Date.now()}`
-    
-    // Return as bytes directly (no additional encoding)
-    return ethers.toUtf8Bytes(mockEncrypted)
+    try {
+      // Convert hex public key back to ArrayBuffer
+      const publicKeyHex = issuerPublicKey.startsWith('0x') ? issuerPublicKey.slice(2) : issuerPublicKey
+      const publicKeyBytes = new Uint8Array(
+        publicKeyHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+      )
+      
+      // Import the public key for encryption
+      const publicKey = await window.crypto.subtle.importKey(
+        "spki",
+        publicKeyBytes,
+        {
+          name: "RSA-OAEP",
+          hash: "SHA-256"
+        },
+        false,
+        ["encrypt"]
+      )
+      
+      // Create bid data object
+      const bidData = JSON.stringify({
+        price,
+        quantity,
+        salt,
+        timestamp: Date.now(),
+        bidder: await (await getProviderAndSigner()).signer.getAddress()
+      })
+      
+      // Encrypt the bid data
+      const encryptedBuffer = await window.crypto.subtle.encrypt(
+        {
+          name: "RSA-OAEP"
+        },
+        publicKey,
+        new TextEncoder().encode(bidData)
+      )
+      
+      return new Uint8Array(encryptedBuffer)
+    } catch (error) {
+      console.error('Failed to encrypt bid:', error)
+      throw new Error('Failed to encrypt bid data')
+    }
   }
 
   const handleSubmitBid = async () => {

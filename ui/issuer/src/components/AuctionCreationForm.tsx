@@ -68,20 +68,46 @@ export function AuctionCreationForm() {
   }
 
   const generateKeyPair = async () => {
-    // Simulate RSA key generation
-    // In a real implementation, this would use the crypto utilities from the parent project
-    const mockPublicKey = "0x30820122300d06092a864886f70d01010105000382010f003082010a0282010100..."
-    const mockPrivateKey = "308204bc020100300d06092a864886f70d0101010500048204a6308204a202010002820101..."
-    
-    setGeneratedKeys({
-      publicKey: mockPublicKey,
-      privateKey: mockPrivateKey
-    })
-    
-    setFormData(prev => ({
-      ...prev,
-      issuerPublicKey: mockPublicKey
-    }))
+    try {
+      // Generate real RSA key pair using Web Crypto API
+      const keyPair = await window.crypto.subtle.generateKey(
+        {
+          name: "RSA-OAEP",
+          modulusLength: 2048,
+          publicExponent: new Uint8Array([1, 0, 1]), // 65537
+          hash: "SHA-256"
+        },
+        true, // extractable
+        ["encrypt", "decrypt"]
+      )
+      
+      // Export public key in SPKI format
+      const publicKeyBuffer = await window.crypto.subtle.exportKey("spki", keyPair.publicKey)
+      const publicKeyArray = new Uint8Array(publicKeyBuffer)
+      const publicKeyHex = "0x" + Array.from(publicKeyArray)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+      
+      // Export private key in PKCS8 format
+      const privateKeyBuffer = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
+      const privateKeyArray = new Uint8Array(privateKeyBuffer)
+      const privateKeyHex = "0x" + Array.from(privateKeyArray)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+      
+      setGeneratedKeys({
+        publicKey: publicKeyHex,
+        privateKey: privateKeyHex
+      })
+      
+      setFormData(prev => ({
+        ...prev,
+        issuerPublicKey: publicKeyHex
+      }))
+    } catch (error) {
+      console.error('Failed to generate RSA key pair:', error)
+      alert('Failed to generate encryption keys. Please try again.')
+    }
   }
 
   const handleDeploy = async () => {
@@ -252,7 +278,7 @@ export function AuctionCreationForm() {
                   <Textarea 
                     value={generatedKeys.privateKey}
                     readOnly 
-                    className="font-mono text-xs h-20"
+                    className="font-mono text-xs h-20 text-gray-900 bg-white"
                   />
                   <p className="text-xs text-yellow-700 mt-1">
                     ⚠️ You need this to decrypt bids during the auction. Store it securely!
@@ -263,7 +289,7 @@ export function AuctionCreationForm() {
                   <Textarea 
                     value={generatedKeys.publicKey}
                     readOnly 
-                    className="font-mono text-xs h-16"
+                    className="font-mono text-xs h-16 text-gray-900 bg-white"
                   />
                 </div>
               </CardContent>
@@ -546,7 +572,7 @@ export function AuctionCreationForm() {
                 <Textarea 
                   value={generatedKeys.publicKey}
                   readOnly
-                  className="font-mono text-xs h-16"
+                  className="font-mono text-xs h-16 text-gray-900 bg-white"
                 />
               </div>
               <p className="text-xs text-muted-foreground">
