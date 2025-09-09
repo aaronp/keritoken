@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { CalendarIcon, Clock, DollarSign, Lock, Key, RefreshCw, ExternalLink } from 'lucide-react'
 import { useFormDefaults, useAuctions, useBondTokens, useAuctionFormState } from '@/hooks/useAppState'
 import { ContractDeployer, getProviderAndSigner, getBlockExplorerUrl } from '@/lib/contracts'
+import { saveAuctionPrivateKey } from '@/lib/auctionKeys'
 
 interface AuctionFormData {
   bondTokenAddress: string
@@ -175,6 +176,17 @@ export function AuctionCreationForm() {
       }
       
       addAuction(auctionData)
+      
+      // Save the private key associated with this auction
+      if (generatedKeys) {
+        saveAuctionPrivateKey({
+          auctionAddress: result.address,
+          privateKey: generatedKeys.privateKey,
+          publicKey: generatedKeys.publicKey,
+          deployedAt: Date.now(),
+          chainId: currentChainId
+        })
+      }
       
     } catch (error) {
       console.error('Auction deployment failed:', error)
