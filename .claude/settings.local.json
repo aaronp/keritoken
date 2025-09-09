@@ -20,7 +20,8 @@
       "Bash(./node_modules/.bin/tailwindcss:*)",
       "Bash(cp:*)",
       "Bash(npm run build:*)",
-      "Bash(timeout 10 npm run dev)"
+      "Bash(timeout 10 npm run dev)",
+      "Bash(make:*)"
     ],
     "deny": []
   }
