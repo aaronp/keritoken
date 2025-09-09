@@ -381,38 +381,65 @@ export function AuctionCreationForm() {
         <div className="space-y-2">
           <Label htmlFor="bondToken">Bond Token Contract Address *</Label>
           <div className="space-y-2">
-            <Input
-              id="bondToken"
-              placeholder="0x..."
-              value={formData.bondTokenAddress}
-              onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
-              className="font-mono"
-            />
-            {bonds.length > 0 && (
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Or select from your deployed bonds:</Label>
+            {bonds.length > 0 ? (
+              <>
                 <Select value={formData.bondTokenAddress} onValueChange={(value) => handleInputChange('bondTokenAddress', value)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose a deployed bond" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bonds.map((bond) => (
-                      <SelectItem key={bond.address} value={bond.address}>
-                        {bond.name} ({bond.symbol}) - {bond.address.slice(0, 8)}...
-                      </SelectItem>
-                    ))}
+                    {bonds
+                      .sort((a, b) => (b.deployedAt || 0) - (a.deployedAt || 0)) // Sort by deployment date, newest first
+                      .map((bond) => {
+                        const deployedDate = bond.deployedAt ? new Date(bond.deployedAt) : null;
+                        const timeDisplay = deployedDate ? 
+                          `${deployedDate.toLocaleDateString()} ${deployedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+                          : 'Unknown time';
+                        return (
+                          <SelectItem key={bond.address} value={bond.address}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{bond.name} ({bond.symbol})</span>
+                              <span className="text-xs text-muted-foreground">
+                                {bond.address.slice(0, 8)}...{bond.address.slice(-6)} • Deployed {timeDisplay}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
-              </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Or enter address manually:</Label>
+                  <Input
+                    id="bondToken"
+                    placeholder="0x..."
+                    value={formData.bondTokenAddress}
+                    onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
+                    className="font-mono"
+                  />
+                </div>
+              </>
+            ) : (
+              <Input
+                id="bondToken"
+                placeholder="0x..."
+                value={formData.bondTokenAddress}
+                onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
+                className="font-mono"
+              />
             )}
           </div>
           {recentBond && formData.bondTokenAddress === recentBond.address ? (
             <p className="text-xs text-primary">
-              ✓ Auto-filled with your most recent bond: {recentBond.name} ({recentBond.symbol})
+              ✓ Using your most recent bond: {recentBond.name} ({recentBond.symbol})
+            </p>
+          ) : formData.bondTokenAddress ? (
+            <p className="text-xs text-muted-foreground">
+              Using bond contract: {formData.bondTokenAddress.slice(0, 8)}...{formData.bondTokenAddress.slice(-6)}
             </p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Address of the deployed bond token contract
+              Select a deployed bond or enter contract address
             </p>
           )}
         </div>

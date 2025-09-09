@@ -2,15 +2,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BondCreationForm } from '@/components/BondCreationForm'
 import { AuctionCreationForm } from '@/components/AuctionCreationForm'
-import { AuctionBid } from '@/components/AuctionBid'
+import { AuctionBidSelector } from '@/components/AuctionBidSelector'
 import { WalletConnect } from '@/components/WalletConnect'
 import { StorageDebug } from '@/components/StorageDebug'
-import { useAuctions } from '@/hooks/useAppState'
 import './App.css'
 
 function App() {
-  const { auctions } = useAuctions()
-  const recentAuction = auctions[0] // Get the most recent auction
   
   return (
     <div className="min-h-screen bg-background">
@@ -66,46 +63,7 @@ function App() {
               </TabsContent>
               
               <TabsContent value="bid-auction" className="space-y-4">
-                {recentAuction ? (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Bid on Auction</CardTitle>
-                      <CardDescription>
-                        Submit encrypted bids on the most recent auction: {recentAuction.bondTokenName}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <AuctionBid
-                        auctionAddress={recentAuction.address}
-                        bondTokenAddress={recentAuction.bondTokenAddress}
-                        bondTokenName={recentAuction.bondTokenName}
-                        minPrice={recentAuction.minPrice}
-                        maxPrice={recentAuction.maxPrice}
-                        bondSupply={recentAuction.bondSupply}
-                        commitDeadline={Math.floor(Date.now() / 1000) + (parseInt(recentAuction.commitDays) * 24 * 60 * 60)}
-                        revealDeadline={Math.floor(Date.now() / 1000) + ((parseInt(recentAuction.commitDays) + parseInt(recentAuction.revealDays)) * 24 * 60 * 60)}
-                        claimDeadline={Math.floor(Date.now() / 1000) + ((parseInt(recentAuction.commitDays) + parseInt(recentAuction.revealDays) + parseInt(recentAuction.claimDays)) * 24 * 60 * 60)}
-                        issuerPublicKey={recentAuction.publicKey}
-                        chainId={recentAuction.chainId}
-                      />
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>No Auctions Available</CardTitle>
-                      <CardDescription>
-                        Create an auction first to start bidding
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground">
-                        Go to the "Create Auction" tab to deploy your first bond auction, 
-                        then return here to submit bids.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
+                <AuctionBidSelector />
               </TabsContent>
               
               <TabsContent value="storage" className="space-y-4">
