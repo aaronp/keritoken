@@ -1,7 +1,7 @@
 # Bond Auction System Makefile
 # Provides convenient targets for testing and deployment
 
-.PHONY: help install compile test test-basic test-verbose clean deploy-local deploy-sepolia deploy-base node coverage lint format verify
+.PHONY: help install compile test test-basic auction-test test-verbose clean deploy-local deploy-sepolia deploy-base node coverage lint format verify
 
 # Default target
 help:
@@ -16,6 +16,7 @@ help:
 	@echo "Testing:"
 	@echo "  test           - Run all tests"
 	@echo "  test-basic     - Run basic functionality tests only"
+	@echo "  auction-test   - Run full UI workflow auction test with RSA encryption"
 	@echo "  test-verbose   - Run tests with detailed output"
 	@echo "  coverage       - Generate test coverage report"
 	@echo ""
@@ -62,6 +63,12 @@ test-basic: compile
 	@echo "Running basic functionality tests..."
 	npx hardhat test test/BasicTest.test.js
 	@echo "✅ Basic tests passed"
+
+auction-test: compile
+	@echo "Running full UI workflow auction test with RSA encryption..."
+	@echo "This test covers the complete workflow: bond creation → auction deployment → encrypted bidding → finalization"
+	npx hardhat test test/BondAuctionFullWorkflow.test.js
+	@echo "✅ Full auction workflow test passed"
 
 test-verbose: compile
 	@echo "Running tests with verbose output..."

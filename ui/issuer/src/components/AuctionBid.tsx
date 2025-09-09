@@ -183,23 +183,129 @@ export function AuctionBid({
 
     try {
       const { signer } = await getProviderAndSigner()
+      console.log('Signer address:', await signer.getAddress())
+      console.log('Target auction address:', auctionAddress)
+      
+      // Verify contract exists at address
+      const contractCode = await signer.provider!.getCode(auctionAddress)
+      console.log('Contract code length:', contractCode.length)
+      if (contractCode === '0x') {
+        throw new Error('No contract deployed at the specified address')
+      }
+
       const interactor = new ContractInteractor(signer.provider!, signer)
       const auctionContract = await interactor.getBondAuctionContract(auctionAddress)
+      
+      console.log('Contract instance created, testing interface...')
+      console.log('auctionContract:', auctionContract)
+      console.log('auctionContract type:', typeof auctionContract)
+      
+      if (!auctionContract) {
+        throw new Error('Failed to create auction contract instance')
+      }
+      
+      // Store interface reference to avoid potential issues
+      const contractInterface = auctionContract.interface
+      console.log('contractInterface:', contractInterface)
+      console.log('contractInterface type:', typeof contractInterface)
+      
+      if (!contractInterface) {
+        throw new Error('Contract interface is undefined - artifact loading failed')
+      }
+      
+      console.log('Interface properties:', Object.keys(contractInterface))
+      console.log('Interface fragments:', contractInterface.fragments)
+      console.log('Interface forEachFunction:', contractInterface.forEachFunction)
+      
+      const interfaceFunctions = contractInterface.functions
+      console.log('interfaceFunctions:', interfaceFunctions)
+      console.log('interfaceFunctions type:', typeof interfaceFunctions)
+      
+      if (!interfaceFunctions) {
+        console.log('Functions property is undefined, trying alternative approaches...')
+        
+        // Try getting functions through fragments
+        if (contractInterface.fragments) {
+          const functionFragments = contractInterface.fragments.filter(f => f.type === 'function')
+          console.log('Function fragments:', functionFragments.map(f => f.name))
+        }
+        
+        // Try alternative methods to get functions
+        if (contractInterface.forEachFunction) {
+          const functionNames = []
+          contractInterface.forEachFunction((func, name) => {
+            functionNames.push(name)
+          })
+          console.log('Functions via forEachFunction:', functionNames)
+        }
+        
+        console.log('Proceeding despite interface.functions being undefined - will test if contract methods work directly')
+      } else {
+        // If functions property exists, show the function keys
+        console.log('Contract interface functions:', Object.keys(interfaceFunctions))
+      }
 
-      // Test basic contract read call first to verify ABI
-      console.log('Testing contract connection...')
+      // Test basic contract read call first to verify ABI and check auction state
+      console.log('Testing contract connection and checking auction state...')
       try {
         const contractBondSupply = await auctionContract.bondSupply()
         const contractMinPrice = await auctionContract.minPrice()
         const contractMaxPrice = await auctionContract.maxPrice()
-        console.log('Contract read test successful:', {
+        const contractCommitDeadline = await auctionContract.commitDeadline()
+        const contractRevealDeadline = await auctionContract.revealDeadline()
+        const contractState = await auctionContract.state()
+        
+        const currentTime = Math.floor(Date.now() / 1000)
+        const commitDeadlineNum = Number(contractCommitDeadline)
+        const revealDeadlineNum = Number(contractRevealDeadline)
+        
+        console.log('Contract state check:', {
           bondSupply: contractBondSupply.toString(),
           minPrice: contractMinPrice.toString(),
-          maxPrice: contractMaxPrice.toString()
+          maxPrice: contractMaxPrice.toString(),
+          commitDeadline: commitDeadlineNum,
+          revealDeadline: revealDeadlineNum,
+          auctionState: contractState,
+          currentTime: currentTime,
+          isCommitPhase: currentTime < commitDeadlineNum,
+          timeUntilCommitEnd: commitDeadlineNum - currentTime,
+          commitDeadlineDate: new Date(commitDeadlineNum * 1000).toLocaleString(),
+          currentDate: new Date().toLocaleString()
         })
+        
+        // Detailed validation based on contract requirements
+        if (contractState !== 0) { // 0 should be Commit state according to enum
+          const stateNames = ['Commit', 'Reveal', 'Finalized', 'Distributed']
+          const stateName = stateNames[contractState] || 'Unknown'
+          throw new Error(`Auction is not in commit phase. Current state: ${stateName} (${contractState})`)
+        }
+        
+        if (currentTime >= commitDeadlineNum) {
+          throw new Error(`Commit phase has ended. Deadline was ${new Date(commitDeadlineNum * 1000).toLocaleString()}`)
+        }
+        
+        // Check if user already has a bid committed
+        const userAddress = await signer.getAddress()
+        try {
+          const existingBid = await auctionContract.bids(userAddress)
+          console.log('Existing bid check:', existingBid)
+          
+          // In Solidity, bytes32(0) is the default value, so we check if commitment is not zero
+          if (existingBid.commitment !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
+            throw new Error('You have already committed a bid for this auction. Each address can only bid once.')
+          }
+        } catch (bidCheckError) {
+          console.log('Could not check existing bid (might be expected):', bidCheckError.message)
+        }
+        
       } catch (readError) {
         console.error('Contract read test failed:', readError)
-        throw new Error(`Contract ABI mismatch or connection failed: ${readError.message}`)
+        console.error('Read error details:', {
+          message: readError.message,
+          code: readError.code,
+          data: readError.data
+        })
+        throw new Error(`Pre-flight validation failed: ${readError.message}`)
       }
 
       // Generate commitment hash (now async)
@@ -225,8 +331,30 @@ export function AuctionBid({
       if (!(encryptedBid instanceof Uint8Array)) {
         throw new Error(`Invalid encrypted bid format: ${typeof encryptedBid}`)
       }
+      if (encryptedBid.length === 0) {
+        throw new Error('Encrypted bid is empty - encryption failed')
+      }
+
+      // Check if commitBid function exists in contract interface
+      try {
+        if (auctionContract.interface && auctionContract.interface.getFunction) {
+          const commitBidFunction = auctionContract.interface.getFunction('commitBid')
+          console.log('commitBid function signature:', commitBidFunction.format())
+        } else {
+          console.log('getFunction method not available, will try direct contract call')
+        }
+      } catch (funcError) {
+        console.error('commitBid function not found in contract interface:', funcError)
+        console.log('Will try direct contract call anyway')
+      }
 
       // Submit bid to contract - encryptedBid is already bytes
+      console.log('Calling commitBid with:', {
+        commitment,
+        encryptedBidLength: encryptedBid.length,
+        gasLimit: 300000
+      })
+      
       const tx = await auctionContract.commitBid(
         commitment,
         encryptedBid, // Already Uint8Array, no need to convert

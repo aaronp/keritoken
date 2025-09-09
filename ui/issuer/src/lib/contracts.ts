@@ -309,11 +309,35 @@ export class ContractInteractor {
   // Get auction contract instance
   async getBondAuctionContract(address: string) {
     if (!this.signer) throw new Error('Signer required for contract interactions')
+    
+    console.log('Loading BondAuction artifact...')
     const artifact = await loadBondAuctionArtifact()
-    if (!artifact || !artifact.abi) {
-      throw new Error('Failed to load BondAuction artifact')
+    if (!artifact) {
+      throw new Error('BondAuction artifact is null or undefined')
     }
-    return new ethers.Contract(address, artifact.abi, this.signer)
+    if (!artifact.abi) {
+      throw new Error('BondAuction artifact missing ABI')
+    }
+    
+    console.log('Creating contract instance with ABI length:', artifact.abi.length)
+    console.log('ABI structure sample:', artifact.abi.slice(0, 3))
+    
+    // Check if ABI has function entries
+    const functionEntries = artifact.abi.filter(entry => entry.type === 'function')
+    console.log('Function entries in ABI:', functionEntries.length)
+    console.log('Function names:', functionEntries.map(f => f.name).slice(0, 5))
+    
+    const contract = new ethers.Contract(address, artifact.abi, this.signer)
+    
+    if (!contract.interface) {
+      throw new Error('Failed to create contract interface from ABI')
+    }
+    
+    console.log('Contract instance created successfully')
+    console.log('Contract interface type:', typeof contract.interface)
+    console.log('Interface constructor name:', contract.interface.constructor.name)
+    
+    return contract
   }
 
   // Get USDC contract instance
