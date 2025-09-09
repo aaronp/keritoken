@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BondCreationForm } from '@/components/BondCreationForm'
 import { AuctionCreationForm } from '@/components/AuctionCreationForm'
 import { WalletConnect } from '@/components/WalletConnect'
+import { StorageDebug } from '@/components/StorageDebug'
 import './App.css'
 
 function App() {
@@ -24,9 +25,10 @@ function App() {
           {/* Main Content */}
           <div className="w-full max-w-4xl">
             <Tabs defaultValue="create-bond" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="create-bond">Create Bond</TabsTrigger>
                 <TabsTrigger value="create-auction">Create Auction</TabsTrigger>
+                <TabsTrigger value="storage">Storage</TabsTrigger>
               </TabsList>
               
               <TabsContent value="create-bond" className="space-y-4">
@@ -53,6 +55,20 @@ function App() {
                   </CardHeader>
                   <CardContent>
                     <AuctionCreationForm />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="storage" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>App Storage</CardTitle>
+                    <CardDescription>
+                      View and manage your deployed contracts and app data
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <StorageDebug />
                   </CardContent>
                 </Card>
               </TabsContent>

@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CalendarIcon, DollarSign, Percent, TrendingUp } from 'lucide-react'
+import { useBondTokens } from '@/hooks/useAppState'
 
 interface BondFormData {
   name: string
@@ -17,6 +18,8 @@ interface BondFormData {
 }
 
 export function BondCreationForm() {
+  const { addBond } = useBondTokens()
+  
   const [formData, setFormData] = useState<BondFormData>({
     name: '',
     symbol: '',
@@ -29,6 +32,7 @@ export function BondCreationForm() {
 
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedAddress, setDeployedAddress] = useState<string>('')
+  const [deployedChainId, setDeployedChainId] = useState<number>(84532)
 
   const handleInputChange = (field: keyof BondFormData, value: string) => {
     setFormData(prev => ({
@@ -43,7 +47,26 @@ export function BondCreationForm() {
       // Here we would integrate with the contract deployment
       // For now, we'll simulate the deployment
       await simulateDeployment()
-      setDeployedAddress('0x1234567890abcdef1234567890abcdef12345678')
+      const mockAddress = '0x1234567890abcdef1234567890abcdef12345678'
+      setDeployedAddress(mockAddress)
+      
+      // Save the deployed bond to state
+      const bondData = {
+        address: mockAddress,
+        name: formData.name,
+        symbol: formData.symbol,
+        maxSupply: formData.maxSupply,
+        faceValue: formData.faceValue,
+        couponRate: formData.couponRate,
+        maturityMonths: formData.maturityMonths,
+        maturityDate: calculateMaturityDate(),
+        description: formData.description || '',
+        chainId: deployedChainId,
+        txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+      }
+      
+      addBond(bondData)
+      
     } catch (error) {
       console.error('Deployment failed:', error)
       alert('Deployment failed. Please check your wallet connection and try again.')

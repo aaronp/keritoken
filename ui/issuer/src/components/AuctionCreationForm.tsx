@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { CalendarIcon, Clock, DollarSign, Lock, Key } from 'lucide-react'
+import { useFormDefaults, useAuctions, useBondTokens } from '@/hooks/useAppState'
 
 interface AuctionFormData {
   bondTokenAddress: string
@@ -20,6 +21,10 @@ interface AuctionFormData {
 }
 
 export function AuctionCreationForm() {
+  const { recentBond, getAuctionFormDefaults } = useFormDefaults(84532) // Default to Base Sepolia
+  const { addAuction } = useAuctions()
+  const { bonds } = useBondTokens(84532)
+  
   const [formData, setFormData] = useState<AuctionFormData>({
     bondTokenAddress: '',
     paymentTokenAddress: '',
@@ -34,10 +39,20 @@ export function AuctionCreationForm() {
 
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedAddress, setDeployedAddress] = useState<string>('')
+  const [deployedChainId, setDeployedChainId] = useState<number>(84532)
   const [generatedKeys, setGeneratedKeys] = useState<{
     publicKey: string
     privateKey: string
   } | null>(null)
+  
+  // Auto-populate form with defaults when component mounts or recent bond changes
+  useEffect(() => {
+    const defaults = getAuctionFormDefaults()
+    setFormData(prev => ({
+      ...prev,
+      ...defaults
+    }))
+  }, [getAuctionFormDefaults])
 
   const handleInputChange = (field: keyof AuctionFormData, value: string) => {
     setFormData(prev => ({
@@ -68,7 +83,31 @@ export function AuctionCreationForm() {
     try {
       // Here we would integrate with the auction contract deployment
       await simulateDeployment()
-      setDeployedAddress('0xabcdef1234567890abcdef1234567890abcdef12')
+      const mockAuctionAddress = '0xabcdef1234567890abcdef1234567890abcdef12'
+      setDeployedAddress(mockAuctionAddress)
+      
+      // Find the bond name for better UX
+      const bondName = recentBond?.name || 'Unknown Bond'
+      
+      // Save the deployed auction to state
+      const auctionData = {
+        address: mockAuctionAddress,
+        bondTokenAddress: formData.bondTokenAddress,
+        bondTokenName: bondName,
+        paymentTokenAddress: formData.paymentTokenAddress,
+        bondSupply: formData.bondSupply,
+        minPrice: formData.minPrice,
+        maxPrice: formData.maxPrice,
+        commitDays: formData.commitDays,
+        revealDays: formData.revealDays,
+        claimDays: formData.claimDays,
+        publicKey: formData.issuerPublicKey,
+        chainId: deployedChainId,
+        txHash: '0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321'
+      }
+      
+      addAuction(auctionData)
+      
     } catch (error) {
       console.error('Deployment failed:', error)
       alert('Deployment failed. Please check your wallet connection and try again.')
@@ -203,16 +242,41 @@ export function AuctionCreationForm() {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="bondToken">Bond Token Contract Address *</Label>
-          <Input
-            id="bondToken"
-            placeholder="0x..."
-            value={formData.bondTokenAddress}
-            onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
-            className="font-mono"
-          />
-          <p className="text-xs text-muted-foreground">
-            Address of the deployed bond token contract
-          </p>
+          <div className="space-y-2">
+            <Input
+              id="bondToken"
+              placeholder="0x..."
+              value={formData.bondTokenAddress}
+              onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
+              className="font-mono"
+            />
+            {bonds.length > 0 && (
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Or select from your deployed bonds:</Label>
+                <Select value={formData.bondTokenAddress} onValueChange={(value) => handleInputChange('bondTokenAddress', value)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a deployed bond" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bonds.map((bond) => (
+                      <SelectItem key={bond.address} value={bond.address}>
+                        {bond.name} ({bond.symbol}) - {bond.address.slice(0, 8)}...
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          {recentBond && formData.bondTokenAddress === recentBond.address ? (
+            <p className="text-xs text-primary">
+              ✓ Auto-filled with your most recent bond: {recentBond.name} ({recentBond.symbol})
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Address of the deployed bond token contract
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
