@@ -23,10 +23,11 @@ interface AuctionFormData {
 }
 
 export function AuctionCreationForm() {
-  const chainId = 84532 // Default to Base Sepolia
-  const { recentBond } = useFormDefaults(chainId)
+  const [currentChainId, setCurrentChainId] = useState<number>(31337) // Default to Hardhat local
+  const { recentBond } = useFormDefaults(currentChainId)
   const { addAuction } = useAuctions()
-  const { bonds } = useBondTokens(chainId)
+  const { bonds, isLoading: bondsLoading } = useBondTokens(currentChainId)
+  const { bonds: allBonds } = useBondTokens() // Get bonds from all chains as fallback
   const { 
     getFormDefaults, 
     saveFormState, 
@@ -34,24 +35,51 @@ export function AuctionCreationForm() {
     stateAge, 
     clearSavedState,
     isUsingSavedState 
-  } = useAuctionFormState(chainId)
+  } = useAuctionFormState(currentChainId)
   
   const [formData, setFormData] = useState<AuctionFormData>(() => getFormDefaults())
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedAddress, setDeployedAddress] = useState<string>('')
-  const [deployedChainId, setDeployedChainId] = useState<number>(chainId)
+  const [deployedChainId, setDeployedChainId] = useState<number>(currentChainId)
   const [transactionHash, setTransactionHash] = useState<string>('')
   const [deploymentError, setDeploymentError] = useState<string>('')
   const [generatedKeys, setGeneratedKeys] = useState<{
     publicKey: string
     privateKey: string
   } | null>(null)
+
+  // Update chainId when wallet connects or changes
+  useEffect(() => {
+    const updateChainId = async () => {
+      try {
+        const { chainId } = await getProviderAndSigner()
+        setCurrentChainId(chainId)
+        setDeployedChainId(chainId)
+      } catch (error) {
+        console.log('Wallet not connected, using default chainId')
+      }
+    }
+    
+    updateChainId()
+  }, [])
   
   // Load form defaults on mount and when they change
   useEffect(() => {
     const defaults = getFormDefaults()
     setFormData(defaults)
   }, [getFormDefaults])
+
+  // Debug logging for bonds
+  useEffect(() => {
+    console.log('AuctionCreationForm bonds debug:', {
+      currentChainId,
+      bondsOnCurrentChain: bonds.length,
+      bonds: bonds.map(b => ({ name: b.name, address: b.address, chainId: b.chainId })),
+      allBonds: allBonds.length,
+      allBondsData: allBonds.map(b => ({ name: b.name, address: b.address, chainId: b.chainId })),
+      bondsLoading
+    })
+  }, [bonds, allBonds, currentChainId, bondsLoading])
 
   const handleInputChange = (field: keyof AuctionFormData, value: string) => {
     const newFormData = {
@@ -381,35 +409,77 @@ export function AuctionCreationForm() {
         <div className="space-y-2">
           <Label htmlFor="bondToken">Bond Token Contract Address *</Label>
           <div className="space-y-2">
-            {bonds.length > 0 ? (
-              <>
-                <Select value={formData.bondTokenAddress} onValueChange={(value) => handleInputChange('bondTokenAddress', value)}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose a deployed bond" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bonds
-                      .sort((a, b) => (b.deployedAt || 0) - (a.deployedAt || 0)) // Sort by deployment date, newest first
-                      .map((bond) => {
-                        const deployedDate = bond.deployedAt ? new Date(bond.deployedAt) : null;
-                        const timeDisplay = deployedDate ? 
-                          `${deployedDate.toLocaleDateString()} ${deployedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
-                          : 'Unknown time';
-                        return (
-                          <SelectItem key={bond.address} value={bond.address}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{bond.name} ({bond.symbol})</span>
-                              <span className="text-xs text-muted-foreground">
-                                {bond.address.slice(0, 8)}...{bond.address.slice(-6)} • Deployed {timeDisplay}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Or enter address manually:</Label>
+            {(() => {
+              // Use bonds from current chain, fallback to all bonds if none on current chain
+              const availableBonds = bonds.length > 0 ? bonds : allBonds;
+              const showingAllChains = bonds.length === 0 && allBonds.length > 0;
+              
+              return availableBonds.length > 0 ? (
+                <>
+                  {showingAllChains && (
+                    <div className="p-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded">
+                      ⚠️ No bonds found on current network (Chain {currentChainId}). Showing bonds from all networks.
+                    </div>
+                  )}
+                  <Select value={formData.bondTokenAddress} onValueChange={(value) => handleInputChange('bondTokenAddress', value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose a deployed bond" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableBonds
+                        .sort((a, b) => (b.deployedAt || 0) - (a.deployedAt || 0)) // Sort by deployment date, newest first
+                        .map((bond) => {
+                          const deployedDate = bond.deployedAt ? new Date(bond.deployedAt) : null;
+                          const timeDisplay = deployedDate ? 
+                            `${deployedDate.toLocaleDateString()} ${deployedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+                            : 'Unknown time';
+                          
+                          const networkName = bond.chainId === 31337 ? 'Local' : 
+                                            bond.chainId === 84532 ? 'Base Sepolia' :
+                                            bond.chainId === 8453 ? 'Base' : 
+                                            `Chain ${bond.chainId}`;
+                          
+                          return (
+                            <SelectItem key={bond.address} value={bond.address}>
+                              <div className="flex flex-col">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">{bond.name} ({bond.symbol})</span>
+                                  <span className="text-xs px-1 py-0.5 bg-blue-100 text-blue-800 rounded">
+                                    {networkName}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {bond.address.slice(0, 8)}...{bond.address.slice(-6)} • Deployed {timeDisplay}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Or enter address manually:</Label>
+                    <Input
+                      id="bondToken"
+                      placeholder="0x..."
+                      value={formData.bondTokenAddress}
+                      onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
+                      className="font-mono"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="p-3 text-sm text-muted-foreground bg-muted/50 border border-dashed rounded-lg text-center">
+                    {bondsLoading ? (
+                      'Loading bonds...'
+                    ) : (
+                      <>
+                        No bond tokens found. Create a bond token first in the "Create Bond" tab,<br />
+                        then return here to create an auction.
+                      </>
+                    )}
+                  </div>
                   <Input
                     id="bondToken"
                     placeholder="0x..."
@@ -418,16 +488,8 @@ export function AuctionCreationForm() {
                     className="font-mono"
                   />
                 </div>
-              </>
-            ) : (
-              <Input
-                id="bondToken"
-                placeholder="0x..."
-                value={formData.bondTokenAddress}
-                onChange={(e) => handleInputChange('bondTokenAddress', e.target.value)}
-                className="font-mono"
-              />
-            )}
+              );
+            })()}
           </div>
           {recentBond && formData.bondTokenAddress === recentBond.address ? (
             <p className="text-xs text-primary">
