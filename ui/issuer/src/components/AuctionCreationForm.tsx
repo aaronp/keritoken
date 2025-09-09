@@ -41,7 +41,6 @@ export function AuctionCreationForm() {
   const [deployedChainId, setDeployedChainId] = useState<number>(chainId)
   const [transactionHash, setTransactionHash] = useState<string>('')
   const [deploymentError, setDeploymentError] = useState<string>('')
-  const [isSimulationMode, setIsSimulationMode] = useState<boolean | null>(null)
   const [generatedKeys, setGeneratedKeys] = useState<{
     publicKey: string
     privateKey: string
@@ -128,7 +127,6 @@ export function AuctionCreationForm() {
       // Update UI state
       setDeployedAddress(result.address)
       setTransactionHash(result.transactionHash)
-      setIsSimulationMode(result.isSimulated || false)
       
       // Find the bond name for better UX
       const bondName = recentBond?.name || 'Unknown Bond'
@@ -204,12 +202,8 @@ export function AuctionCreationForm() {
             <Lock className="h-5 w-5" />
             <span>Auction Contract Deployed Successfully!</span>
           </CardTitle>
-          <CardDescription className={isSimulationMode ? "text-muted-foreground" : "text-primary/80"}>
-            {isSimulationMode ? (
-              <>⚠️ <strong>Development Mode:</strong> This is a simulated deployment. To use real contracts, see public/contracts/README.md</>
-            ) : (
-              "Your encrypted bidding auction is now live"
-            )}
+          <CardDescription className="text-primary/80">
+            Your encrypted bidding auction is now live
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -231,7 +225,7 @@ export function AuctionCreationForm() {
                   readOnly
                   className="font-mono text-sm"
                 />
-                {deployedChainId && !isSimulationMode && getBlockExplorerUrl(deployedChainId, transactionHash) !== '#' && (
+                {deployedChainId && getBlockExplorerUrl(deployedChainId, transactionHash) !== '#' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -239,11 +233,6 @@ export function AuctionCreationForm() {
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
-                )}
-                {isSimulationMode && (
-                  <span className="text-xs text-muted-foreground">
-                    (Simulated - no block explorer)
-                  </span>
                 )}
               </div>
             </div>
@@ -297,7 +286,6 @@ export function AuctionCreationForm() {
               setDeployedAddress('')
               setTransactionHash('')
               setDeploymentError('')
-              setIsSimulationMode(null)
               setGeneratedKeys(null)
               setFormData({
                 bondTokenAddress: '',

@@ -68,27 +68,27 @@ export class ContractDeployer {
       const response = await fetch('/contracts/BondToken.json')
       
       if (!response.ok) {
-        throw new Error('ARTIFACTS_NOT_FOUND')
+        throw new Error(`Failed to load BondToken artifacts: ${response.status} ${response.statusText}. Make sure contract artifacts are available in public/contracts/`)
       }
       
       const text = await response.text()
       
       // Check if we got HTML instead of JSON (404 page)
       if (text.trim().startsWith('<!doctype') || text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-        throw new Error('ARTIFACTS_NOT_FOUND')
+        throw new Error('Contract artifacts not found. Run "make test" in parent directory and copy artifacts to public/contracts/')
       }
       
       let artifact
       try {
         artifact = JSON.parse(text)
       } catch (parseError) {
-        throw new Error('ARTIFACTS_INVALID')
+        throw new Error(`Invalid contract artifact JSON: ${parseError}`)
       }
       
       const { abi, bytecode } = artifact
       
       if (!bytecode || bytecode === '0x') {
-        throw new Error('ARTIFACTS_EMPTY')
+        throw new Error('Contract bytecode is empty. Please recompile contracts with "make test"')
       }
       
       // Convert parameters to blockchain format
@@ -146,23 +146,10 @@ export class ContractDeployer {
         name: params.name,
         symbol: params.symbol,
         blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed.toString(),
-        isSimulated: false
+        gasUsed: receipt.gasUsed.toString()
       }
     } catch (error) {
       console.error('Bond token deployment failed:', error)
-      
-      // Fall back to simulation if artifacts are missing (for development)
-      if (error instanceof Error && (
-        error.message === 'ARTIFACTS_NOT_FOUND' || 
-        error.message === 'ARTIFACTS_INVALID' ||
-        error.message === 'ARTIFACTS_EMPTY'
-      )) {
-        console.warn('Contract artifacts not available. Falling back to simulated deployment for development.')
-        console.warn('To use real deployment: 1) Run "make test" in parent directory, 2) Copy artifacts to public/contracts/')
-        return this.simulateBondTokenDeployment(params)
-      }
-      
       throw error
     }
   }
@@ -273,81 +260,12 @@ export class ContractDeployer {
         bondSupply: params.bondSupply,
         priceRange: `${params.minPrice} - ${params.maxPrice}`,
         blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed.toString(),
-        isSimulated: false
+        gasUsed: receipt.gasUsed.toString()
       }
     } catch (error) {
       console.error('Bond auction deployment failed:', error)
-      
-      // Fall back to simulation if artifacts are missing (for development)
-      if (error instanceof Error && (
-        error.message === 'ARTIFACTS_NOT_FOUND' || 
-        error.message === 'ARTIFACTS_INVALID' ||
-        error.message === 'ARTIFACTS_EMPTY'
-      )) {
-        console.warn('Contract artifacts not available. Falling back to simulated deployment for development.')
-        console.warn('To use real deployment: 1) Run "make test" in parent directory, 2) Copy artifacts to public/contracts/')
-        return this.simulateBondAuctionDeployment(params)
-      }
-      
       throw error
     }
-  }
-
-  // Fallback simulation methods for development
-  private async simulateBondTokenDeployment(params: {
-    name: string
-    symbol: string
-    maxSupply: string
-    maturityDate: number
-    faceValue: number
-    couponRate: number
-  }) {
-    await this.simulateTransaction()
-    
-    const mockAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0')
-    
-    return {
-      address: mockAddress,
-      transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
-      name: params.name,
-      symbol: params.symbol,
-      blockNumber: Math.floor(Math.random() * 1000000),
-      gasUsed: '2500000',
-      isSimulated: true
-    }
-  }
-
-  private async simulateBondAuctionDeployment(params: {
-    bondTokenAddress: string
-    paymentTokenAddress: string
-    bondSupply: string
-    minPrice: string
-    maxPrice: string
-    commitDuration: number
-    revealDuration: number
-    claimDuration: number
-    issuerPublicKey: string
-  }) {
-    await this.simulateTransaction()
-    
-    const mockAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0')
-    
-    return {
-      address: mockAddress,
-      transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
-      bondSupply: params.bondSupply,
-      priceRange: `${params.minPrice} - ${params.maxPrice}`,
-      blockNumber: Math.floor(Math.random() * 1000000),
-      gasUsed: '3500000',
-      isSimulated: true
-    }
-  }
-
-  private simulateTransaction(): Promise<void> {
-    return new Promise((resolve) => {
-      setTimeout(resolve, 2000 + Math.random() * 2000) // 2-4 second delay
-    })
   }
 }
 
@@ -471,8 +389,8 @@ export const getBlockExplorerUrl = (chainId: number, txHash: string): string => 
     case 84532:
       return `https://sepolia.basescan.org/tx/${txHash}`
     case 31337:
-      // Check if local Blockscout is running
-      return `http://localhost:4000/tx/${txHash}` // Assumes Blockscout on port 4000
+      // Use simple local explorer
+      return `/explorer.html?tx=${txHash}` // Simple HTML explorer
     default:
       return `#`
   }

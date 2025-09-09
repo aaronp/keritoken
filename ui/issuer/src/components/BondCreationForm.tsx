@@ -28,7 +28,6 @@ export function BondCreationForm() {
   const [deployedChainId, setDeployedChainId] = useState<number>(84532)
   const [transactionHash, setTransactionHash] = useState<string>('')
   const [deploymentError, setDeploymentError] = useState<string>('')
-  const [isSimulationMode, setIsSimulationMode] = useState<boolean | null>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load saved form state on mount
@@ -109,7 +108,6 @@ export function BondCreationForm() {
       // Update UI state
       setDeployedAddress(result.address)
       setTransactionHash(result.transactionHash)
-      setIsSimulationMode(result.isSimulated || false)
       
       // Save the deployed bond to state
       const bondData = {
@@ -135,13 +133,17 @@ export function BondCreationForm() {
       
       // Show user-friendly error message
       if (errorMessage.includes('user rejected')) {
-        // User cancelled transaction
+        setDeploymentError('Transaction was cancelled by user')
       } else if (errorMessage.includes('insufficient funds')) {
-        alert('Insufficient funds for deployment. Please make sure you have enough ETH for gas fees.')
+        setDeploymentError('Insufficient funds for deployment. Please make sure you have enough ETH for gas fees.')
+      } else if (errorMessage.includes('Contract artifacts not found')) {
+        setDeploymentError('Contract artifacts missing. Run "make test" in parent directory and copy artifacts to public/contracts/')
       } else if (errorMessage.includes('MetaMask')) {
-        alert('MetaMask connection error. Please check your wallet connection and try again.')
+        setDeploymentError('MetaMask connection error. Please check your wallet connection and try again.')
+      } else if (errorMessage.includes('network')) {
+        setDeploymentError('Network error. Please check your connection and try again.')
       } else {
-        alert(`Deployment failed: ${errorMessage}`)
+        setDeploymentError(`Deployment failed: ${errorMessage}`)
       }
     } finally {
       setIsDeploying(false)
@@ -174,11 +176,6 @@ export function BondCreationForm() {
             <TrendingUp className="h-5 w-5" />
             <span>Bond Token Deployed Successfully!</span>
           </CardTitle>
-          {isSimulationMode && (
-            <CardDescription className="text-muted-foreground">
-              ⚠️ <strong>Development Mode:</strong> This is a simulated deployment. To use real contracts, see public/contracts/README.md
-            </CardDescription>
-          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -199,7 +196,7 @@ export function BondCreationForm() {
                   readOnly
                   className="font-mono text-sm"
                 />
-                {deployedChainId && !isSimulationMode && getBlockExplorerUrl(deployedChainId, transactionHash) !== '#' && (
+                {deployedChainId && getBlockExplorerUrl(deployedChainId, transactionHash) !== '#' && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -207,11 +204,6 @@ export function BondCreationForm() {
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>
-                )}
-                {isSimulationMode && (
-                  <span className="text-xs text-muted-foreground">
-                    (Simulated - no block explorer)
-                  </span>
                 )}
               </div>
             </div>
@@ -232,7 +224,6 @@ export function BondCreationForm() {
               setDeployedAddress('')
               setTransactionHash('')
               setDeploymentError('')
-              setIsSimulationMode(null)
               setFormData({
                 name: '',
                 symbol: '',

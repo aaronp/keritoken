@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Local Block Explorer</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .tx { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        .hash { font-family: monospace; background: #f5f5f5; padding: 2px; }
+    </style>
+</head>
+<body>
+    <h1>Local Block Explorer</h1>
+    <div>
+        <label>Transaction Hash:</label>
+        <input type="text" id="txHash" placeholder="0x..." style="width: 400px;">
+        <button onclick="lookupTx()">Lookup</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+
+        async function lookupTx() {
+            const hash = document.getElementById('txHash').value;
+            const result = document.getElementById('result');
+            
+            if (!hash) return;
+            
+            try {
+                result.innerHTML = 'Loading...';
+                const tx = await provider.getTransaction(hash);
+                const receipt = await provider.getTransactionReceipt(hash);
+                
+                result.innerHTML = `
+                    <div class="tx">
+                        <h3>Transaction Details</h3>
+                        <p><strong>Hash:</strong> <span class="hash">${tx.hash}</span></p>
+                        <p><strong>From:</strong> <span class="hash">${tx.from}</span></p>
+                        <p><strong>To:</strong> <span class="hash">${tx.to || 'Contract Creation'}</span></p>
+                        <p><strong>Value:</strong> ${ethers.utils.formatEther(tx.value)} ETH</p>
+                        <p><strong>Gas Used:</strong> ${receipt ? receipt.gasUsed.toString() : 'Pending'}</p>
+                        <p><strong>Block:</strong> ${tx.blockNumber || 'Pending'}</p>
+                        <p><strong>Status:</strong> ${receipt ? (receipt.status ? 'Success' : 'Failed') : 'Pending'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Auto-fill from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const txParam = urlParams.get('tx');
+        if (txParam) {
+            document.getElementById('txHash').value = txParam;
+            lookupTx();
+        }
+    </script>
+</body>
+</html>

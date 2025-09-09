@@ -1,10 +1,10 @@
 # Contract Artifacts
 
-This directory should contain the compiled contract artifacts for real blockchain deployment.
+This directory contains the compiled contract artifacts required for blockchain deployment. 
 
-## Setup for Real Deployment
+## Required Setup
 
-To enable real contract deployment instead of simulation:
+The application requires contract artifacts to function. Follow these steps:
 
 ### 1. Compile Contracts
 ```bash
@@ -39,29 +39,30 @@ Each JSON file should have this structure:
 }
 ```
 
-## Development vs Production
+## How It Works
 
-### Without Artifacts (Development Mode)
-- ✅ App works with simulated deployment
-- ✅ All UI functionality available
-- ✅ Form state management works
-- ❌ No real blockchain interaction
-- ❌ Mock addresses and transaction hashes
+The application performs real blockchain deployments on:
+- **Local Network** (Hardhat): chainId 31337
+- **Base Sepolia** (Testnet): chainId 84532  
+- **Base Mainnet** (Production): chainId 8453
 
-### With Artifacts (Production Mode)  
+### Features:
 - ✅ Real contract deployment to blockchain
-- ✅ Actual transaction hashes
+- ✅ Actual transaction hashes and receipts
 - ✅ Real contract addresses
 - ✅ Full MetaMask integration
-- ❌ Requires compiled contracts
+- ✅ Block explorer integration
+- ✅ Gas estimation and transaction monitoring
 
 ## Error Messages
 
-If you see these errors, it means artifacts are missing:
+Common deployment errors and solutions:
 
-- `"Deployment failed: SyntaxError: Unexpected token '<'"` - 404 page received instead of JSON
-- `"Contract artifacts not available"` - Files don't exist or are invalid
-- `"Falling back to simulated deployment"` - Using mock deployment instead
+- `"Failed to load BondToken artifacts: 404 Not Found"` - Contract artifacts missing from public/contracts/
+- `"Contract artifacts not found"` - Run `make test` and copy artifacts  
+- `"Contract bytecode is empty"` - Recompile contracts with `make clean && make test`
+- `"Insufficient funds for deployment"` - Add ETH to your wallet for gas fees
+- `"User rejected transaction"` - Transaction was cancelled in MetaMask
 
 ## Networks Supported
 
