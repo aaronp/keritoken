@@ -21,7 +21,8 @@
       "Bash(cp:*)",
       "Bash(npm run build:*)",
       "Bash(timeout 10 npm run dev)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": []
   }
