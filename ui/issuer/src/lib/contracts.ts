@@ -146,7 +146,8 @@ export class ContractDeployer {
         name: params.name,
         symbol: params.symbol,
         blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed.toString()
+        gasUsed: receipt.gasUsed.toString(),
+        isSimulated: false
       }
     } catch (error) {
       console.error('Bond token deployment failed:', error)
@@ -272,7 +273,8 @@ export class ContractDeployer {
         bondSupply: params.bondSupply,
         priceRange: `${params.minPrice} - ${params.maxPrice}`,
         blockNumber: receipt.blockNumber,
-        gasUsed: receipt.gasUsed.toString()
+        gasUsed: receipt.gasUsed.toString(),
+        isSimulated: false
       }
     } catch (error) {
       console.error('Bond auction deployment failed:', error)
@@ -469,7 +471,8 @@ export const getBlockExplorerUrl = (chainId: number, txHash: string): string => 
     case 84532:
       return `https://sepolia.basescan.org/tx/${txHash}`
     case 31337:
-      return `#` // No explorer for local network
+      // Check if local Blockscout is running
+      return `http://localhost:4000/tx/${txHash}` // Assumes Blockscout on port 4000
     default:
       return `#`
   }

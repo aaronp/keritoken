@@ -198,7 +198,7 @@ export function AuctionCreationForm() {
 
   if (deployedAddress) {
     return (
-      <Card className="border-green-200 bg-green-50">
+      <Card className="border-primary/20 bg-primary/5">
         <CardHeader>
           <CardTitle className="text-primary flex items-center space-x-2">
             <Lock className="h-5 w-5" />
