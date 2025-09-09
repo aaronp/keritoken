@@ -10,7 +10,17 @@
       "Bash(npm install)",
       "Bash(npx hardhat:*)",
       "Bash(npm test)",
-      "Bash(make deploy-local:*)"
+      "Bash(make deploy-local:*)",
+      "Bash(npm create:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx:*)",
+      "Bash(./node_modules/.bin/tailwindcss:*)",
+      "Bash(cp:*)",
+      "Bash(npm run build:*)",
+      "Bash(timeout 10 npm run dev)"
     ],
     "deny": []
   }

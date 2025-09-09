@@ -13,12 +13,12 @@ This document outlines the step-by-step process for launching an on-chain auctio
 ## Phase 1: Smart Contract Development & Testing
 
 ### 1.1 Contract Development
-- [ ] Implement ERC20 bond token contract with minting capabilities
-- [ ] Implement auction contract with encrypted bidding mechanism
-- [ ] Add issuer public key storage for bid encryption
-- [ ] Implement encrypted bid submission with commitment hash
-- [ ] Create off-chain encryption/decryption utilities
-- [ ] Implement stablecoin interface (or use existing USDC on Base)
+- [x] Implement ERC20 bond token contract with minting capabilities
+- [x] Implement auction contract with encrypted bidding mechanism
+- [x] Add issuer public key storage for bid encryption
+- [x] Implement encrypted bid submission with commitment hash
+- [x] Create off-chain encryption/decryption utilities
+- [x] Implement stablecoin interface (or use existing USDC on Base)
 - [ ] Add access control for minter role management
 - [ ] Implement pro-rata allocation logic for margin bids
 
