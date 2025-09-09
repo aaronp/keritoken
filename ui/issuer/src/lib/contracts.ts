@@ -47,7 +47,7 @@ export const MOCK_USDC_ABI = [
   "function allowance(address owner, address spender) public view returns (uint256)"
 ]
 
-// Contract deployment functions
+// Real contract deployment functions
 export class ContractDeployer {
   private signer: ethers.Signer
   
@@ -64,22 +64,105 @@ export class ContractDeployer {
     couponRate: number
   }) {
     try {
-      // In a real implementation, you would use the contract factory
-      // For now, we'll simulate the deployment
-      await this.simulateTransaction()
+      // Get the bytecode from the parent project's artifacts
+      const response = await fetch('/contracts/BondToken.json')
       
-      // Return mock address - in real implementation, this would be the actual deployed address
-      const mockAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0')
+      if (!response.ok) {
+        throw new Error('ARTIFACTS_NOT_FOUND')
+      }
+      
+      const text = await response.text()
+      
+      // Check if we got HTML instead of JSON (404 page)
+      if (text.trim().startsWith('<!doctype') || text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error('ARTIFACTS_NOT_FOUND')
+      }
+      
+      let artifact
+      try {
+        artifact = JSON.parse(text)
+      } catch (parseError) {
+        throw new Error('ARTIFACTS_INVALID')
+      }
+      
+      const { abi, bytecode } = artifact
+      
+      if (!bytecode || bytecode === '0x') {
+        throw new Error('ARTIFACTS_EMPTY')
+      }
+      
+      // Convert parameters to blockchain format
+      const maxSupplyWei = ethers.parseEther(params.maxSupply)
+      const faceValueWei = ethers.parseEther(params.faceValue.toString())
+      const couponRateBps = Math.floor(params.couponRate * 100) // Convert to basis points
+      
+      console.log('Deploying BondToken with parameters:', {
+        name: params.name,
+        symbol: params.symbol,
+        maxSupply: maxSupplyWei.toString(),
+        maturityDate: params.maturityDate,
+        faceValue: faceValueWei.toString(),
+        couponRate: couponRateBps
+      })
+      
+      // Create contract factory and deploy
+      const contractFactory = new ethers.ContractFactory(abi, bytecode, this.signer)
+      
+      const contract = await contractFactory.deploy(
+        params.name,
+        params.symbol,
+        maxSupplyWei,
+        params.maturityDate,
+        faceValueWei,
+        couponRateBps,
+        {
+          gasLimit: 3000000 // Generous gas limit
+        }
+      )
+      
+      console.log('Contract deployment initiated. Transaction hash:', contract.deploymentTransaction()?.hash)
+      
+      // Wait for deployment to complete
+      await contract.waitForDeployment()
+      const deploymentTx = contract.deploymentTransaction()
+      const receipt = await deploymentTx?.wait()
+      
+      if (!receipt) {
+        throw new Error('Deployment transaction failed')
+      }
+      
+      const contractAddress = await contract.getAddress()
+      
+      console.log('BondToken deployed successfully:', {
+        address: contractAddress,
+        txHash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString()
+      })
       
       return {
-        address: mockAddress,
-        transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
+        address: contractAddress,
+        transactionHash: receipt.hash,
         name: params.name,
-        symbol: params.symbol
+        symbol: params.symbol,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString()
       }
     } catch (error) {
       console.error('Bond token deployment failed:', error)
-      throw new Error('Failed to deploy bond token contract')
+      
+      // Fall back to simulation if artifacts are missing (for development)
+      if (error instanceof Error && (
+        error.message === 'ARTIFACTS_NOT_FOUND' || 
+        error.message === 'ARTIFACTS_INVALID' ||
+        error.message === 'ARTIFACTS_EMPTY'
+      )) {
+        console.warn('Contract artifacts not available. Falling back to simulated deployment for development.')
+        console.warn('To use real deployment: 1) Run "make test" in parent directory, 2) Copy artifacts to public/contracts/')
+        return this.simulateBondTokenDeployment(params)
+      }
+      
+      throw error
     }
   }
 
@@ -95,20 +178,167 @@ export class ContractDeployer {
     issuerPublicKey: string
   }) {
     try {
-      // Simulate deployment
-      await this.simulateTransaction()
+      // Get the bytecode from the parent project's artifacts
+      const response = await fetch('/contracts/BondAuction.json')
       
-      const mockAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0')
+      if (!response.ok) {
+        throw new Error('ARTIFACTS_NOT_FOUND')
+      }
+      
+      const text = await response.text()
+      
+      // Check if we got HTML instead of JSON (404 page)
+      if (text.trim().startsWith('<!doctype') || text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        throw new Error('ARTIFACTS_NOT_FOUND')
+      }
+      
+      let artifact
+      try {
+        artifact = JSON.parse(text)
+      } catch (parseError) {
+        throw new Error('ARTIFACTS_INVALID')
+      }
+      
+      const { abi, bytecode } = artifact
+      
+      if (!bytecode || bytecode === '0x') {
+        throw new Error('ARTIFACTS_EMPTY')
+      }
+      
+      // Convert parameters to blockchain format
+      const bondSupplyWei = ethers.parseEther(params.bondSupply)
+      const minPriceWei = ethers.parseEther(params.minPrice)
+      const maxPriceWei = ethers.parseEther(params.maxPrice)
+      
+      // Calculate deadlines from current time
+      const now = Math.floor(Date.now() / 1000)
+      const commitDeadline = now + (params.commitDuration * 24 * 60 * 60) // Convert days to seconds
+      const revealDeadline = commitDeadline + (params.revealDuration * 24 * 60 * 60)
+      const claimDeadline = revealDeadline + (params.claimDuration * 24 * 60 * 60)
+      
+      console.log('Deploying BondAuction with parameters:', {
+        bondToken: params.bondTokenAddress,
+        paymentToken: params.paymentTokenAddress,
+        bondSupply: bondSupplyWei.toString(),
+        minPrice: minPriceWei.toString(),
+        maxPrice: maxPriceWei.toString(),
+        commitDeadline,
+        revealDeadline,
+        claimDeadline,
+        issuerPublicKey: params.issuerPublicKey
+      })
+      
+      // Create contract factory and deploy
+      const contractFactory = new ethers.ContractFactory(abi, bytecode, this.signer)
+      
+      const contract = await contractFactory.deploy(
+        params.bondTokenAddress,
+        params.paymentTokenAddress,
+        bondSupplyWei,
+        minPriceWei,
+        maxPriceWei,
+        commitDeadline,
+        revealDeadline,
+        claimDeadline,
+        ethers.toUtf8Bytes(params.issuerPublicKey), // Convert string to bytes
+        {
+          gasLimit: 4000000 // Generous gas limit for auction contract
+        }
+      )
+      
+      console.log('Auction deployment initiated. Transaction hash:', contract.deploymentTransaction()?.hash)
+      
+      // Wait for deployment to complete
+      await contract.waitForDeployment()
+      const deploymentTx = contract.deploymentTransaction()
+      const receipt = await deploymentTx?.wait()
+      
+      if (!receipt) {
+        throw new Error('Deployment transaction failed')
+      }
+      
+      const contractAddress = await contract.getAddress()
+      
+      console.log('BondAuction deployed successfully:', {
+        address: contractAddress,
+        txHash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString()
+      })
       
       return {
-        address: mockAddress,
-        transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
+        address: contractAddress,
+        transactionHash: receipt.hash,
         bondSupply: params.bondSupply,
-        priceRange: `${params.minPrice} - ${params.maxPrice}`
+        priceRange: `${params.minPrice} - ${params.maxPrice}`,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString()
       }
     } catch (error) {
       console.error('Bond auction deployment failed:', error)
-      throw new Error('Failed to deploy bond auction contract')
+      
+      // Fall back to simulation if artifacts are missing (for development)
+      if (error instanceof Error && (
+        error.message === 'ARTIFACTS_NOT_FOUND' || 
+        error.message === 'ARTIFACTS_INVALID' ||
+        error.message === 'ARTIFACTS_EMPTY'
+      )) {
+        console.warn('Contract artifacts not available. Falling back to simulated deployment for development.')
+        console.warn('To use real deployment: 1) Run "make test" in parent directory, 2) Copy artifacts to public/contracts/')
+        return this.simulateBondAuctionDeployment(params)
+      }
+      
+      throw error
+    }
+  }
+
+  // Fallback simulation methods for development
+  private async simulateBondTokenDeployment(params: {
+    name: string
+    symbol: string
+    maxSupply: string
+    maturityDate: number
+    faceValue: number
+    couponRate: number
+  }) {
+    await this.simulateTransaction()
+    
+    const mockAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0')
+    
+    return {
+      address: mockAddress,
+      transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
+      name: params.name,
+      symbol: params.symbol,
+      blockNumber: Math.floor(Math.random() * 1000000),
+      gasUsed: '2500000',
+      isSimulated: true
+    }
+  }
+
+  private async simulateBondAuctionDeployment(params: {
+    bondTokenAddress: string
+    paymentTokenAddress: string
+    bondSupply: string
+    minPrice: string
+    maxPrice: string
+    commitDuration: number
+    revealDuration: number
+    claimDuration: number
+    issuerPublicKey: string
+  }) {
+    await this.simulateTransaction()
+    
+    const mockAddress = '0x' + Math.random().toString(16).substring(2, 42).padStart(40, '0')
+    
+    return {
+      address: mockAddress,
+      transactionHash: '0x' + Math.random().toString(16).substring(2, 66),
+      bondSupply: params.bondSupply,
+      priceRange: `${params.minPrice} - ${params.maxPrice}`,
+      blockNumber: Math.floor(Math.random() * 1000000),
+      gasUsed: '3500000',
+      isSimulated: true
     }
   }
 
@@ -210,4 +440,37 @@ export const isValidAddress = (address: string): boolean => {
 export const shortenAddress = (address: string): string => {
   if (!isValidAddress(address)) return ''
   return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
+
+// Get provider and signer from MetaMask
+export const getProviderAndSigner = async () => {
+  if (!window.ethereum) {
+    throw new Error('MetaMask is not installed. Please install MetaMask to deploy contracts.')
+  }
+  
+  const provider = new ethers.BrowserProvider(window.ethereum)
+  const signer = await provider.getSigner()
+  const network = await provider.getNetwork()
+  
+  return {
+    provider,
+    signer,
+    chainId: Number(network.chainId)
+  }
+}
+
+// Get block explorer URL for transaction
+export const getBlockExplorerUrl = (chainId: number, txHash: string): string => {
+  switch (chainId) {
+    case 1:
+      return `https://etherscan.io/tx/${txHash}`
+    case 8453:
+      return `https://basescan.org/tx/${txHash}`
+    case 84532:
+      return `https://sepolia.basescan.org/tx/${txHash}`
+    case 31337:
+      return `#` // No explorer for local network
+    default:
+      return `#`
+  }
 }

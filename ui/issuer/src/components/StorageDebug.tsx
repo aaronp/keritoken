@@ -5,7 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAppState, useBondTokens, useAuctions } from '@/hooks/useAppState'
-import { getStorageStats, clearAppState } from '@/lib/storage'
+import { getStorageStats, clearAppState, getSavedBondFormState, getSavedAuctionFormState, getFormStateAge, clearFormStates } from '@/lib/storage'
 import { useState, useEffect } from 'react'
 
 export function StorageDebug() {
@@ -13,9 +13,17 @@ export function StorageDebug() {
   const { bonds } = useBondTokens()
   const { auctions } = useAuctions()
   const [stats, setStats] = useState<ReturnType<typeof getStorageStats> | null>(null)
+  const [bondFormState, setBondFormState] = useState<ReturnType<typeof getSavedBondFormState>>(null)
+  const [auctionFormState, setAuctionFormState] = useState<ReturnType<typeof getSavedAuctionFormState>>(null)
+  const [bondFormAge, setBondFormAge] = useState<number | null>(null)
+  const [auctionFormAge, setAuctionFormAge] = useState<number | null>(null)
   
   useEffect(() => {
     setStats(getStorageStats())
+    setBondFormState(getSavedBondFormState())
+    setAuctionFormState(getSavedAuctionFormState())
+    setBondFormAge(getFormStateAge('bond'))
+    setAuctionFormAge(getFormStateAge('auction'))
   }, [bonds, auctions])
   
   const handleClearStorage = () => {
@@ -23,6 +31,16 @@ export function StorageDebug() {
       clearAppState()
       refreshState()
       setStats(getStorageStats())
+    }
+  }
+  
+  const handleClearFormStates = () => {
+    if (confirm('Clear saved form states?')) {
+      clearFormStates()
+      setBondFormState(null)
+      setAuctionFormState(null)
+      setBondFormAge(null)
+      setAuctionFormAge(null)
     }
   }
   
@@ -111,7 +129,53 @@ export function StorageDebug() {
         </Card>
       )}
       
-      <div className="flex justify-end">
+      {(bondFormState || auctionFormState) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Saved Form States</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {bondFormState && bondFormAge !== null && (
+                <div className="border-l-2 border-primary pl-3">
+                  <div className="font-medium">Bond Creation Form</div>
+                  <div className="text-sm text-muted-foreground">
+                    {bondFormState.name || 'Untitled'} ({bondFormState.symbol || 'N/A'})
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Saved: {bondFormAge < 60 ? `${bondFormAge} minutes ago` : `${Math.floor(bondFormAge / 60)} hours ago`}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Supply: {bondFormState.maxSupply} • Face Value: ${bondFormState.faceValue} • Rate: {bondFormState.couponRate}%
+                  </div>
+                </div>
+              )}
+              
+              {auctionFormState && auctionFormAge !== null && (
+                <div className="border-l-2 border-secondary pl-3">
+                  <div className="font-medium">Auction Creation Form</div>
+                  <div className="text-sm text-muted-foreground font-mono">
+                    {auctionFormState.bondTokenAddress.slice(0, 10)}...
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Saved: {auctionFormAge < 60 ? `${auctionFormAge} minutes ago` : `${Math.floor(auctionFormAge / 60)} hours ago`}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Supply: {auctionFormState.bondSupply} • Price: ${auctionFormState.minPrice}-${auctionFormState.maxPrice}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      <div className="flex justify-end space-x-2">
+        {(bondFormState || auctionFormState) && (
+          <Button variant="outline" size="sm" onClick={handleClearFormStates}>
+            Clear Form States
+          </Button>
+        )}
         <Button variant="destructive" size="sm" onClick={handleClearStorage}>
           Clear All Data
         </Button>

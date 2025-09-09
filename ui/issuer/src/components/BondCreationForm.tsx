@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CalendarIcon, DollarSign, Percent, TrendingUp } from 'lucide-react'
-import { useBondTokens } from '@/hooks/useAppState'
+import { CalendarIcon, DollarSign, Percent, TrendingUp, RefreshCw, ExternalLink } from 'lucide-react'
+import { useBondTokens, useBondFormState } from '@/hooks/useAppState'
+import { ContractDeployer, getProviderAndSigner, getBlockExplorerUrl } from '@/lib/contracts'
 
 interface BondFormData {
   name: string
@@ -19,40 +20,100 @@ interface BondFormData {
 
 export function BondCreationForm() {
   const { addBond } = useBondTokens()
-  
-  const [formData, setFormData] = useState<BondFormData>({
-    name: '',
-    symbol: '',
-    maxSupply: '',
-    faceValue: '100',
-    couponRate: '2.5',
-    maturityMonths: '12',
-    description: ''
-  })
+  const { getFormDefaults, saveFormState, hasSavedState, stateAge, clearSavedState } = useBondFormState()
 
+  const [formData, setFormData] = useState<BondFormData>(() => getFormDefaults())
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedAddress, setDeployedAddress] = useState<string>('')
   const [deployedChainId, setDeployedChainId] = useState<number>(84532)
+  const [transactionHash, setTransactionHash] = useState<string>('')
+  const [deploymentError, setDeploymentError] = useState<string>('')
+  const [isSimulationMode, setIsSimulationMode] = useState<boolean | null>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Load saved form state on mount
+  useEffect(() => {
+    const defaults = getFormDefaults()
+    setFormData(defaults)
+  }, [getFormDefaults])
+
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [])
 
   const handleInputChange = (field: keyof BondFormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: value
-    }))
+    }
+    setFormData(newFormData)
+
+    // Save form state with proper debouncing (only if form has meaningful content)
+    if (newFormData.name || newFormData.symbol || newFormData.maxSupply) {
+      // Cancel previous timeout
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+      
+      // Set new timeout
+      debounceRef.current = setTimeout(() => {
+        saveFormState(newFormData)
+      }, 1000) // Debounce for 1 second
+    }
   }
 
   const handleDeploy = async () => {
     setIsDeploying(true)
+    setDeploymentError('')
+    
     try {
-      // Here we would integrate with the contract deployment
-      // For now, we'll simulate the deployment
-      await simulateDeployment()
-      const mockAddress = '0x1234567890abcdef1234567890abcdef12345678'
-      setDeployedAddress(mockAddress)
+      // Get provider, signer, and current chain ID
+      const { signer, chainId } = await getProviderAndSigner()
+      setDeployedChainId(chainId)
+      
+      // Create contract deployer
+      const deployer = new ContractDeployer(signer)
+      
+      // Calculate maturity date timestamp
+      const maturityDate = new Date()
+      maturityDate.setMonth(maturityDate.getMonth() + parseInt(formData.maturityMonths))
+      const maturityTimestamp = Math.floor(maturityDate.getTime() / 1000)
+      
+      console.log('Starting bond token deployment...', {
+        name: formData.name,
+        symbol: formData.symbol,
+        maxSupply: formData.maxSupply,
+        faceValue: parseFloat(formData.faceValue),
+        couponRate: parseFloat(formData.couponRate),
+        maturityDate: maturityTimestamp,
+        chainId
+      })
+      
+      // Deploy the contract
+      const result = await deployer.deployBondToken({
+        name: formData.name,
+        symbol: formData.symbol,
+        maxSupply: formData.maxSupply,
+        maturityDate: maturityTimestamp,
+        faceValue: parseFloat(formData.faceValue),
+        couponRate: parseFloat(formData.couponRate)
+      })
+      
+      console.log('Bond token deployed successfully:', result)
+      
+      // Update UI state
+      setDeployedAddress(result.address)
+      setTransactionHash(result.transactionHash)
+      setIsSimulationMode(result.isSimulated || false)
       
       // Save the deployed bond to state
       const bondData = {
-        address: mockAddress,
+        address: result.address,
         name: formData.name,
         symbol: formData.symbol,
         maxSupply: formData.maxSupply,
@@ -61,31 +122,40 @@ export function BondCreationForm() {
         maturityMonths: formData.maturityMonths,
         maturityDate: calculateMaturityDate(),
         description: formData.description || '',
-        chainId: deployedChainId,
-        txHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
+        chainId: chainId,
+        txHash: result.transactionHash
       }
       
       addBond(bondData)
       
     } catch (error) {
       console.error('Deployment failed:', error)
-      alert('Deployment failed. Please check your wallet connection and try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      setDeploymentError(errorMessage)
+      
+      // Show user-friendly error message
+      if (errorMessage.includes('user rejected')) {
+        // User cancelled transaction
+      } else if (errorMessage.includes('insufficient funds')) {
+        alert('Insufficient funds for deployment. Please make sure you have enough ETH for gas fees.')
+      } else if (errorMessage.includes('MetaMask')) {
+        alert('MetaMask connection error. Please check your wallet connection and try again.')
+      } else {
+        alert(`Deployment failed: ${errorMessage}`)
+      }
     } finally {
       setIsDeploying(false)
     }
   }
 
-  const simulateDeployment = () => {
-    return new Promise(resolve => setTimeout(resolve, 3000))
-  }
 
   const isFormValid = () => {
-    return formData.name && 
-           formData.symbol && 
-           formData.maxSupply && 
-           formData.faceValue && 
-           formData.couponRate && 
-           formData.maturityMonths
+    return formData.name &&
+      formData.symbol &&
+      formData.maxSupply &&
+      formData.faceValue &&
+      formData.couponRate &&
+      formData.maturityMonths
   }
 
   const calculateMaturityDate = () => {
@@ -104,16 +174,49 @@ export function BondCreationForm() {
             <TrendingUp className="h-5 w-5" />
             <span>Bond Token Deployed Successfully!</span>
           </CardTitle>
+          {isSimulationMode && (
+            <CardDescription className="text-muted-foreground">
+              ⚠️ <strong>Development Mode:</strong> This is a simulated deployment. To use real contracts, see public/contracts/README.md
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label>Contract Address</Label>
-            <Input 
-              value={deployedAddress} 
-              readOnly 
+            <Input
+              value={deployedAddress}
+              readOnly
               className="font-mono text-sm"
             />
           </div>
+          
+          {transactionHash && (
+            <div>
+              <Label>Transaction Hash</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={transactionHash}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                {deployedChainId && !isSimulationMode && getBlockExplorerUrl(deployedChainId, transactionHash) !== '#' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(getBlockExplorerUrl(deployedChainId, transactionHash), '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+                {isSimulationMode && (
+                  <span className="text-xs text-muted-foreground">
+                    (Simulated - no block explorer)
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Token Name</Label>
@@ -124,9 +227,12 @@ export function BondCreationForm() {
               <p className="text-sm font-medium text-foreground">{formData.symbol}</p>
             </div>
           </div>
-          <Button 
+          <Button
             onClick={() => {
               setDeployedAddress('')
+              setTransactionHash('')
+              setDeploymentError('')
+              setIsSimulationMode(null)
               setFormData({
                 name: '',
                 symbol: '',
@@ -149,6 +255,28 @@ export function BondCreationForm() {
 
   return (
     <div className="space-y-6">
+      {/* Form State Indicator */}
+      {hasSavedState && stateAge !== null && (
+        <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border">
+          <div className="flex items-center space-x-2">
+            <RefreshCw className="h-4 w-4 text-primary" />
+            <span className="text-sm text-foreground">
+              Form restored from {stateAge < 60 ? `${stateAge} minutes ago` : `${Math.floor(stateAge / 60)} hours ago`}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              clearSavedState()
+              setFormData(getFormDefaults())
+            }}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
       {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -188,7 +316,7 @@ export function BondCreationForm() {
           />
           <p className="text-xs text-muted-foreground">Total bonds that can be issued</p>
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="faceValue" className="flex items-center space-x-1">
             <DollarSign className="h-4 w-4" />
@@ -238,7 +366,7 @@ export function BondCreationForm() {
           />
           <p className="text-xs text-muted-foreground">Months until maturity</p>
         </div>
-        
+
         {formData.maturityMonths && (
           <div className="space-y-2">
             <Label>Maturity Date</Label>
@@ -293,8 +421,16 @@ export function BondCreationForm() {
         </Card>
       )}
 
+      {/* Error Display */}
+      {deploymentError && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">Deployment Error:</p>
+          <p className="text-sm text-destructive">{deploymentError}</p>
+        </div>
+      )}
+
       {/* Deploy Button */}
-      <Button 
+      <Button
         onClick={handleDeploy}
         disabled={!isFormValid() || isDeploying}
         className="w-full h-12"

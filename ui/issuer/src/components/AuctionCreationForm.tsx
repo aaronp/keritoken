@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { CalendarIcon, Clock, DollarSign, Lock, Key } from 'lucide-react'
-import { useFormDefaults, useAuctions, useBondTokens } from '@/hooks/useAppState'
+import { CalendarIcon, Clock, DollarSign, Lock, Key, RefreshCw, ExternalLink } from 'lucide-react'
+import { useFormDefaults, useAuctions, useBondTokens, useAuctionFormState } from '@/hooks/useAppState'
+import { ContractDeployer, getProviderAndSigner, getBlockExplorerUrl } from '@/lib/contracts'
 
 interface AuctionFormData {
   bondTokenAddress: string
@@ -21,44 +22,50 @@ interface AuctionFormData {
 }
 
 export function AuctionCreationForm() {
-  const { recentBond, getAuctionFormDefaults } = useFormDefaults(84532) // Default to Base Sepolia
+  const chainId = 84532 // Default to Base Sepolia
+  const { recentBond } = useFormDefaults(chainId)
   const { addAuction } = useAuctions()
-  const { bonds } = useBondTokens(84532)
+  const { bonds } = useBondTokens(chainId)
+  const { 
+    getFormDefaults, 
+    saveFormState, 
+    hasSavedState, 
+    stateAge, 
+    clearSavedState,
+    isUsingSavedState 
+  } = useAuctionFormState(chainId)
   
-  const [formData, setFormData] = useState<AuctionFormData>({
-    bondTokenAddress: '',
-    paymentTokenAddress: '',
-    bondSupply: '',
-    minPrice: '',
-    maxPrice: '',
-    commitDays: '3',
-    revealDays: '2',
-    claimDays: '7',
-    issuerPublicKey: ''
-  })
-
+  const [formData, setFormData] = useState<AuctionFormData>(() => getFormDefaults())
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedAddress, setDeployedAddress] = useState<string>('')
-  const [deployedChainId, setDeployedChainId] = useState<number>(84532)
+  const [deployedChainId, setDeployedChainId] = useState<number>(chainId)
+  const [transactionHash, setTransactionHash] = useState<string>('')
+  const [deploymentError, setDeploymentError] = useState<string>('')
+  const [isSimulationMode, setIsSimulationMode] = useState<boolean | null>(null)
   const [generatedKeys, setGeneratedKeys] = useState<{
     publicKey: string
     privateKey: string
   } | null>(null)
   
-  // Auto-populate form with defaults when component mounts or recent bond changes
+  // Load form defaults on mount and when they change
   useEffect(() => {
-    const defaults = getAuctionFormDefaults()
-    setFormData(prev => ({
-      ...prev,
-      ...defaults
-    }))
-  }, [getAuctionFormDefaults])
+    const defaults = getFormDefaults()
+    setFormData(defaults)
+  }, [getFormDefaults])
 
   const handleInputChange = (field: keyof AuctionFormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: value
-    }))
+    }
+    setFormData(newFormData)
+    
+    // Save form state with debouncing (only if form has meaningful content)
+    if (newFormData.bondTokenAddress || newFormData.bondSupply || newFormData.minPrice) {
+      setTimeout(() => {
+        saveFormState(newFormData)
+      }, 1000) // Debounce for 1 second
+    }
   }
 
   const generateKeyPair = async () => {
@@ -80,18 +87,55 @@ export function AuctionCreationForm() {
 
   const handleDeploy = async () => {
     setIsDeploying(true)
+    setDeploymentError('')
+    
     try {
-      // Here we would integrate with the auction contract deployment
-      await simulateDeployment()
-      const mockAuctionAddress = '0xabcdef1234567890abcdef1234567890abcdef12'
-      setDeployedAddress(mockAuctionAddress)
+      // Get provider, signer, and current chain ID
+      const { signer, chainId: currentChainId } = await getProviderAndSigner()
+      setDeployedChainId(currentChainId)
+      
+      // Create contract deployer
+      const deployer = new ContractDeployer(signer)
+      
+      console.log('Starting auction contract deployment...', {
+        bondTokenAddress: formData.bondTokenAddress,
+        paymentTokenAddress: formData.paymentTokenAddress,
+        bondSupply: formData.bondSupply,
+        minPrice: formData.minPrice,
+        maxPrice: formData.maxPrice,
+        commitDays: parseInt(formData.commitDays),
+        revealDays: parseInt(formData.revealDays),
+        claimDays: parseInt(formData.claimDays),
+        issuerPublicKey: formData.issuerPublicKey,
+        chainId: currentChainId
+      })
+      
+      // Deploy the contract
+      const result = await deployer.deployBondAuction({
+        bondTokenAddress: formData.bondTokenAddress,
+        paymentTokenAddress: formData.paymentTokenAddress,
+        bondSupply: formData.bondSupply,
+        minPrice: formData.minPrice,
+        maxPrice: formData.maxPrice,
+        commitDuration: parseInt(formData.commitDays),
+        revealDuration: parseInt(formData.revealDays),
+        claimDuration: parseInt(formData.claimDays),
+        issuerPublicKey: formData.issuerPublicKey
+      })
+      
+      console.log('Auction contract deployed successfully:', result)
+      
+      // Update UI state
+      setDeployedAddress(result.address)
+      setTransactionHash(result.transactionHash)
+      setIsSimulationMode(result.isSimulated || false)
       
       // Find the bond name for better UX
       const bondName = recentBond?.name || 'Unknown Bond'
       
       // Save the deployed auction to state
       const auctionData = {
-        address: mockAuctionAddress,
+        address: result.address,
         bondTokenAddress: formData.bondTokenAddress,
         bondTokenName: bondName,
         paymentTokenAddress: formData.paymentTokenAddress,
@@ -102,23 +146,32 @@ export function AuctionCreationForm() {
         revealDays: formData.revealDays,
         claimDays: formData.claimDays,
         publicKey: formData.issuerPublicKey,
-        chainId: deployedChainId,
-        txHash: '0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321'
+        chainId: currentChainId,
+        txHash: result.transactionHash
       }
       
       addAuction(auctionData)
       
     } catch (error) {
-      console.error('Deployment failed:', error)
-      alert('Deployment failed. Please check your wallet connection and try again.')
+      console.error('Auction deployment failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      setDeploymentError(errorMessage)
+      
+      // Show user-friendly error message
+      if (errorMessage.includes('user rejected')) {
+        // User cancelled transaction
+      } else if (errorMessage.includes('insufficient funds')) {
+        alert('Insufficient funds for deployment. Please make sure you have enough ETH for gas fees.')
+      } else if (errorMessage.includes('MetaMask')) {
+        alert('MetaMask connection error. Please check your wallet connection and try again.')
+      } else {
+        alert(`Deployment failed: ${errorMessage}`)
+      }
     } finally {
       setIsDeploying(false)
     }
   }
 
-  const simulateDeployment = () => {
-    return new Promise(resolve => setTimeout(resolve, 3000))
-  }
 
   const isFormValid = () => {
     return formData.bondTokenAddress && 
@@ -147,12 +200,16 @@ export function AuctionCreationForm() {
     return (
       <Card className="border-green-200 bg-green-50">
         <CardHeader>
-          <CardTitle className="text-green-800 flex items-center space-x-2">
+          <CardTitle className="text-primary flex items-center space-x-2">
             <Lock className="h-5 w-5" />
             <span>Auction Contract Deployed Successfully!</span>
           </CardTitle>
-          <CardDescription className="text-green-700">
-            Your encrypted bidding auction is now live
+          <CardDescription className={isSimulationMode ? "text-muted-foreground" : "text-primary/80"}>
+            {isSimulationMode ? (
+              <>⚠️ <strong>Development Mode:</strong> This is a simulated deployment. To use real contracts, see public/contracts/README.md</>
+            ) : (
+              "Your encrypted bidding auction is now live"
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -164,6 +221,33 @@ export function AuctionCreationForm() {
               className="font-mono text-sm"
             />
           </div>
+          
+          {transactionHash && (
+            <div>
+              <Label>Transaction Hash</Label>
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={transactionHash}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                {deployedChainId && !isSimulationMode && getBlockExplorerUrl(deployedChainId, transactionHash) !== '#' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(getBlockExplorerUrl(deployedChainId, transactionHash), '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+                {isSimulationMode && (
+                  <span className="text-xs text-muted-foreground">
+                    (Simulated - no block explorer)
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
           
           {generatedKeys && (
             <Card className="border-yellow-200 bg-yellow-50">
@@ -211,6 +295,9 @@ export function AuctionCreationForm() {
           <Button 
             onClick={() => {
               setDeployedAddress('')
+              setTransactionHash('')
+              setDeploymentError('')
+              setIsSimulationMode(null)
               setGeneratedKeys(null)
               setFormData({
                 bondTokenAddress: '',
@@ -238,6 +325,31 @@ export function AuctionCreationForm() {
 
   return (
     <div className="space-y-6">
+      {/* Form State Indicator */}
+      {(hasSavedState || isUsingSavedState) && stateAge !== null && (
+        <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg border">
+          <div className="flex items-center space-x-2">
+            <RefreshCw className="h-4 w-4 text-primary" />
+            <span className="text-sm text-foreground">
+              {isUsingSavedState 
+                ? `Using saved form data from ${stateAge < 60 ? `${stateAge} minutes ago` : `${Math.floor(stateAge / 60)} hours ago`}`
+                : `Form restored from ${stateAge < 60 ? `${stateAge} minutes ago` : `${Math.floor(stateAge / 60)} hours ago`}`
+              }
+            </span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              clearSavedState()
+              setFormData(getFormDefaults())
+            }}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+      
       {/* Contract Addresses */}
       <div className="space-y-4">
         <div className="space-y-2">
@@ -486,6 +598,14 @@ export function AuctionCreationForm() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Error Display */}
+      {deploymentError && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <p className="text-sm text-destructive font-medium">Deployment Error:</p>
+          <p className="text-sm text-destructive">{deploymentError}</p>
+        </div>
       )}
 
       {/* Deploy Button */}

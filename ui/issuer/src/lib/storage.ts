@@ -41,10 +41,40 @@ export interface WalletState {
   lastConnected?: number
 }
 
+export interface BondFormState {
+  name: string
+  symbol: string
+  maxSupply: string
+  faceValue: string
+  couponRate: string
+  maturityMonths: string
+  description: string
+  lastUpdated: number
+}
+
+export interface AuctionFormState {
+  bondTokenAddress: string
+  paymentTokenAddress: string
+  bondSupply: string
+  minPrice: string
+  maxPrice: string
+  commitDays: string
+  revealDays: string
+  claimDays: string
+  issuerPublicKey: string
+  lastUpdated: number
+}
+
+export interface FormStates {
+  bondForm?: BondFormState
+  auctionForm?: AuctionFormState
+}
+
 export interface AppState {
   bonds: BondTokenData[]
   auctions: AuctionData[]
   wallet: WalletState
+  formStates: FormStates
   preferences: {
     theme: 'light' | 'dark' | 'system'
     defaultNetwork: number
@@ -60,6 +90,7 @@ const defaultState: AppState = {
   bonds: [],
   auctions: [],
   wallet: {},
+  formStates: {},
   preferences: {
     theme: 'system',
     defaultNetwork: 84532 // Base Sepolia
@@ -100,6 +131,8 @@ export function loadAppState(): AppState {
       // Ensure arrays exist
       bonds: Array.isArray(parsed.bonds) ? parsed.bonds : [],
       auctions: Array.isArray(parsed.auctions) ? parsed.auctions : [],
+      // Ensure formStates exists
+      formStates: parsed.formStates && typeof parsed.formStates === 'object' ? parsed.formStates : {},
     }
   } catch (error) {
     console.error('Failed to load app state:', error)
@@ -318,4 +351,65 @@ export function findBondByAddress(address: string): BondTokenData | null {
   return state.bonds.find(bond => 
     bond.address.toLowerCase() === address.toLowerCase()
   ) || null
+}
+
+/**
+ * Save bond form state
+ */
+export function saveBondFormState(formData: Omit<BondFormState, 'lastUpdated'>): void {
+  const state = loadAppState()
+  state.formStates.bondForm = {
+    ...formData,
+    lastUpdated: Date.now()
+  }
+  saveAppState(state)
+}
+
+/**
+ * Get saved bond form state
+ */
+export function getSavedBondFormState(): BondFormState | null {
+  const state = loadAppState()
+  return state.formStates.bondForm || null
+}
+
+/**
+ * Save auction form state
+ */
+export function saveAuctionFormState(formData: Omit<AuctionFormState, 'lastUpdated'>): void {
+  const state = loadAppState()
+  state.formStates.auctionForm = {
+    ...formData,
+    lastUpdated: Date.now()
+  }
+  saveAppState(state)
+}
+
+/**
+ * Get saved auction form state
+ */
+export function getSavedAuctionFormState(): AuctionFormState | null {
+  const state = loadAppState()
+  return state.formStates.auctionForm || null
+}
+
+/**
+ * Clear form states
+ */
+export function clearFormStates(): void {
+  const state = loadAppState()
+  state.formStates = {}
+  saveAppState(state)
+}
+
+/**
+ * Get form state age in minutes
+ */
+export function getFormStateAge(formType: 'bond' | 'auction'): number | null {
+  const state = loadAppState()
+  const formState = formType === 'bond' ? state.formStates.bondForm : state.formStates.auctionForm
+  
+  if (!formState) return null
+  
+  return Math.floor((Date.now() - formState.lastUpdated) / (1000 * 60))
 }
