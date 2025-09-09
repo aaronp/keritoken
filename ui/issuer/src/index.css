@@ -59,3 +59,21 @@
     padding: 0;
   }
 }
+
+@layer components {
+  /* Ensure select dropdown has proper background and z-index */
+  [data-radix-select-content] {
+    background-color: hsl(var(--color-popover)) !important;
+    z-index: 9999 !important;
+  }
+  
+  /* Ensure select items have proper background */
+  [data-radix-select-item] {
+    background-color: transparent;
+  }
+  
+  [data-radix-select-item]:hover,
+  [data-radix-select-item][data-highlighted] {
+    background-color: hsl(var(--color-accent)) !important;
+  }
+}

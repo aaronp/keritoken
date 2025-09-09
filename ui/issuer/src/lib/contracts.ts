@@ -191,31 +191,23 @@ export class ContractDeployer {
     issuerPublicKey: string
   }) {
     try {
-      // Get the bytecode from the parent project's artifacts
-      const response = await fetch('/contracts/BondAuction.json')
+      // Load the contract artifact
+      console.log('Loading BondAuction contract artifact...')
       
-      if (!response.ok) {
-        throw new Error('ARTIFACTS_NOT_FOUND')
-      }
+      const artifact = await loadBondAuctionArtifact()
       
-      const text = await response.text()
-      
-      // Check if we got HTML instead of JSON (404 page)
-      if (text.trim().startsWith('<!doctype') || text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-        throw new Error('ARTIFACTS_NOT_FOUND')
-      }
-      
-      let artifact
-      try {
-        artifact = JSON.parse(text)
-      } catch (parseError) {
-        throw new Error('ARTIFACTS_INVALID')
+      if (!artifact) {
+        throw new Error('Failed to load BondAuction artifact')
       }
       
       const { abi, bytecode } = artifact
       
-      if (!bytecode || bytecode === '0x') {
-        throw new Error('ARTIFACTS_EMPTY')
+      if (!abi || !bytecode) {
+        throw new Error('Invalid contract artifact: missing ABI or bytecode')
+      }
+      
+      if (bytecode === '0x' || !bytecode) {
+        throw new Error('Contract bytecode is empty. Please recompile contracts with "make test"')
       }
       
       // Convert parameters to blockchain format
@@ -253,7 +245,7 @@ export class ContractDeployer {
         commitDeadline,
         revealDeadline,
         claimDeadline,
-        ethers.toUtf8Bytes(params.issuerPublicKey), // Convert string to bytes
+        ethers.getBytes(params.issuerPublicKey), // Convert hex string to bytes
         {
           gasLimit: 4000000 // Generous gas limit for auction contract
         }
@@ -305,15 +297,23 @@ export class ContractInteractor {
   }
 
   // Get bond token contract instance
-  getBondTokenContract(address: string) {
+  async getBondTokenContract(address: string) {
     if (!this.signer) throw new Error('Signer required for contract interactions')
-    return new ethers.Contract(address, BOND_TOKEN_ABI, this.signer)
+    const artifact = await loadBondTokenArtifact()
+    if (!artifact || !artifact.abi) {
+      throw new Error('Failed to load BondToken artifact')
+    }
+    return new ethers.Contract(address, artifact.abi, this.signer)
   }
 
   // Get auction contract instance
-  getBondAuctionContract(address: string) {
+  async getBondAuctionContract(address: string) {
     if (!this.signer) throw new Error('Signer required for contract interactions')
-    return new ethers.Contract(address, BOND_AUCTION_ABI, this.signer)
+    const artifact = await loadBondAuctionArtifact()
+    if (!artifact || !artifact.abi) {
+      throw new Error('Failed to load BondAuction artifact')
+    }
+    return new ethers.Contract(address, artifact.abi, this.signer)
   }
 
   // Get USDC contract instance

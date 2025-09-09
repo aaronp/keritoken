@@ -184,7 +184,23 @@ export function AuctionBid({
     try {
       const { signer } = await getProviderAndSigner()
       const interactor = new ContractInteractor(signer.provider!, signer)
-      const auctionContract = interactor.getBondAuctionContract(auctionAddress)
+      const auctionContract = await interactor.getBondAuctionContract(auctionAddress)
+
+      // Test basic contract read call first to verify ABI
+      console.log('Testing contract connection...')
+      try {
+        const contractBondSupply = await auctionContract.bondSupply()
+        const contractMinPrice = await auctionContract.minPrice()
+        const contractMaxPrice = await auctionContract.maxPrice()
+        console.log('Contract read test successful:', {
+          bondSupply: contractBondSupply.toString(),
+          minPrice: contractMinPrice.toString(),
+          maxPrice: contractMaxPrice.toString()
+        })
+      } catch (readError) {
+        console.error('Contract read test failed:', readError)
+        throw new Error(`Contract ABI mismatch or connection failed: ${readError.message}`)
+      }
 
       // Generate commitment hash (now async)
       const commitment = await generateCommitmentHash(bidData.price, bidData.quantity, bidData.salt)
@@ -194,10 +210,21 @@ export function AuctionBid({
       
       console.log('Submitting bid:', {
         commitment,
+        commitmentType: typeof commitment,
+        encryptedBid: encryptedBid,
         encryptedBidLength: encryptedBid.length,
+        encryptedBidType: typeof encryptedBid,
         price: bidData.price,
         quantity: bidData.quantity
       })
+
+      // Verify types are correct for contract call
+      if (typeof commitment !== 'string' || !commitment.startsWith('0x') || commitment.length !== 66) {
+        throw new Error(`Invalid commitment format: ${commitment}`)
+      }
+      if (!(encryptedBid instanceof Uint8Array)) {
+        throw new Error(`Invalid encrypted bid format: ${typeof encryptedBid}`)
+      }
 
       // Submit bid to contract - encryptedBid is already bytes
       const tx = await auctionContract.commitBid(
