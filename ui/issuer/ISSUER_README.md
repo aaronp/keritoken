@@ -2,6 +2,19 @@
 
 A React TypeScript application for creating bond tokens and managing encrypted bond auctions. Built with Vite, shadcn/ui, and Web3 integration.
 
+## 🌐 GitHub Pages Deployment
+
+This application is automatically deployed to GitHub Pages when changes are pushed to the main branch.
+
+**Live Demo**: `https://[username].github.io/[repository-name]/`
+
+The deployment includes:
+- **Main Application**: Available at root `/`
+- **Documentation**: Interactive slides at `/docs/`
+- **Landing Page**: Overview at `/landing.html`
+
+See `.github/workflows/deploy-all.yml` for the deployment configuration.
+
 ## 🚀 Features
 
 ### Bond Token Management

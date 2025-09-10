@@ -1,12 +1,16 @@
-name: Deploy Bond Auction Documentation
+name: Deploy Documentation Only
+
+# This workflow is kept for reference but disabled in favor of deploy-all.yml
+# which deploys both UI and documentation together
 
 on:
-  push:
-    branches: [main, master]
-    paths:
-      - 'docs/**'
-      - '.github/workflows/deploy-slides.yml'
+  # Disabled - use deploy-all.yml instead
   workflow_dispatch:
+    inputs:
+      deploy_docs_only:
+        description: 'Deploy only documentation (not recommended - use deploy-all.yml)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
