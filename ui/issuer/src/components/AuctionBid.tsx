@@ -273,11 +273,13 @@ export function AuctionBid({
           currentDate: new Date().toLocaleString()
         })
         
-        // Detailed validation based on contract requirements
-        if (contractState !== 0) { // 0 should be Commit state according to enum
-          const stateNames = ['Commit', 'Reveal', 'Finalized', 'Distributed']
-          const stateName = stateNames[contractState] || 'Unknown'
-          throw new Error(`Auction is not in commit phase. Current state: ${stateName} (${contractState})`)
+        // Detailed validation based on contract requirements  
+        // Convert BigInt to Number for comparison
+        const stateNumber = Number(contractState)
+        if (stateNumber !== 1) { // 1 is Commit state (Setup=0, Commit=1, Reveal=2, Finalized=3, Distributed=4)
+          const stateNames = ['Setup', 'Commit', 'Reveal', 'Finalized', 'Distributed']
+          const stateName = stateNames[stateNumber] || 'Unknown'
+          throw new Error(`Auction is not in commit phase. Current state: ${stateName} (${stateNumber})`)
         }
         
         if (currentTime >= commitDeadlineNum) {
@@ -340,6 +342,7 @@ export function AuctionBid({
         if (auctionContract.interface && auctionContract.interface.getFunction) {
           const commitBidFunction = auctionContract.interface.getFunction('commitBid')
           console.log('commitBid function signature:', commitBidFunction.format())
+          console.log('commitBid function selector:', commitBidFunction.selector)
         } else {
           console.log('getFunction method not available, will try direct contract call')
         }
@@ -348,18 +351,40 @@ export function AuctionBid({
         console.log('Will try direct contract call anyway')
       }
 
+      // Verify contract deployment
+      console.log('Verifying deployed contract...')
+      const deployedCode = await signer.provider!.getCode(auctionAddress)
+      if (deployedCode === '0x') {
+        throw new Error('No contract found at address - deployment may have failed')
+      }
+      console.log('Contract deployed code length:', deployedCode.length)
+      console.log('Expected contract with commitBid function')
+
+      // Try gas estimation first
+      console.log('Estimating gas for commitBid...')
+      try {
+        const estimatedGas = await auctionContract.commitBid.estimateGas(
+          commitment,
+          encryptedBid
+        )
+        console.log('Estimated gas:', estimatedGas.toString())
+      } catch (gasError) {
+        console.error('Gas estimation failed:', gasError)
+        console.log('This might indicate the transaction would revert')
+      }
+
       // Submit bid to contract - encryptedBid is already bytes
       console.log('Calling commitBid with:', {
         commitment,
         encryptedBidLength: encryptedBid.length,
-        gasLimit: 300000
+        gasLimit: 400000
       })
       
       const tx = await auctionContract.commitBid(
         commitment,
         encryptedBid, // Already Uint8Array, no need to convert
         {
-          gasLimit: 300000 // Increased gas limit
+          gasLimit: 400000 // Increased gas limit
         }
       )
 
