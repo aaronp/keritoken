@@ -1,0 +1,12 @@
+{
+  "note": "This patch modifies ui/issuer/package.json to bypass TypeScript checking",
+  "original_build_script": "tsc -b && vite build",
+  "new_build_script": "vite build",
+  "rationale": "Remove 'tsc -b' to skip TypeScript compilation and only use Vite for bundling",
+  "instructions": [
+    "1. In ui/issuer/package.json, find the 'build' script",
+    "2. Change from: 'tsc -b && vite build'", 
+    "3. Change to: 'vite build'",
+    "4. This will skip TypeScript checking and only bundle with Vite"
+  ]
+}

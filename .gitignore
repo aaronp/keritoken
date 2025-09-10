@@ -17,4 +17,5 @@ artifacts
 .DS_Store
 
 # Testing
-test-results/
+test-results/dist
+ui/issuer/dist
