@@ -36,10 +36,14 @@ The Bond Auction Platform enables:
 *Setting up MetaMask*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/0_metamask.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🦊</div>
+    <h2 class="text-2xl font-bold">Connect MetaMask</h2>
+    <p class="text-gray-600">Connect your MetaMask wallet to begin interacting with the platform</p>
+  </div>
 </div>
 
-Connect your MetaMask wallet to begin interacting with the platform. Make sure you have sufficient ETH for gas fees.
+Make sure you have sufficient ETH for gas fees.
 
 ---
 
@@ -47,10 +51,14 @@ Connect your MetaMask wallet to begin interacting with the platform. Make sure y
 *Ready to start*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/1_connected.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">✅</div>
+    <h2 class="text-2xl font-bold">Wallet Connected</h2>
+    <p class="text-gray-600">Your address is now connected and ready to use</p>
+  </div>
 </div>
 
-Once connected, you'll see your address and can access all platform features. The interface shows your current network and account.
+The interface shows your current network and account address.
 
 ---
 
@@ -58,14 +66,17 @@ Once connected, you'll see your address and can access all platform features. Th
 *Defining bond parameters*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/2_createBond.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🏛️</div>
+    <h2 class="text-2xl font-bold">Create Bond Token</h2>
+    <div class="text-left space-y-2 mt-4">
+      <p>📝 <strong>Name & Symbol</strong>: Token identification</p>
+      <p>💰 <strong>Supply & Face Value</strong>: Economic parameters</p>
+      <p>📈 <strong>Coupon Rate</strong>: Interest rate</p>
+      <p>📅 <strong>Maturity</strong>: Duration in months</p>
+    </div>
+  </div>
 </div>
-
-Configure your bond token with:
-- **Name & Symbol**: Token identification
-- **Supply & Face Value**: Economic parameters  
-- **Coupon Rate**: Interest rate
-- **Maturity**: Duration in months
 
 ---
 
@@ -73,10 +84,14 @@ Configure your bond token with:
 *Blockchain transaction*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">✍️</div>
+    <h2 class="text-2xl font-bold">Sign Transaction</h2>
+    <p class="text-gray-600">MetaMask prompts you to sign the deployment</p>
+  </div>
 </div>
 
-MetaMask will prompt you to sign the deployment transaction. Review gas fees and confirm to deploy your bond token contract.
+Review gas fees and confirm to deploy your bond token contract.
 
 ---
 
@@ -84,10 +99,14 @@ MetaMask will prompt you to sign the deployment transaction. Review gas fees and
 *Contract successfully created*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🎉</div>
+    <h2 class="text-2xl font-bold">Bond Token Deployed</h2>
+    <p class="text-gray-600">Your bond token contract is live on the blockchain</p>
+  </div>
 </div>
 
-Your bond token is now deployed! The contract address is saved locally and displayed with a success confirmation.
+The contract address is saved locally and displayed with success confirmation.
 
 ---
 
@@ -95,14 +114,17 @@ Your bond token is now deployed! The contract address is saved locally and displ
 *Setting up the auction*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🔨</div>
+    <h2 class="text-2xl font-bold">Create Auction</h2>
+    <div class="text-left space-y-2 mt-4">
+      <p>🏛️ <strong>Bond Token</strong>: Select your deployed bond</p>
+      <p>💵 <strong>Price Range</strong>: Min/max bid prices</p>
+      <p>⏰ <strong>Timeline</strong>: Commit, reveal, and claim phases</p>
+      <p>🔐 <strong>RSA Keys</strong>: Generated for bid encryption</p>
+    </div>
+  </div>
 </div>
-
-Configure auction parameters:
-- **Bond Token**: Select your deployed bond
-- **Price Range**: Min/max bid prices
-- **Timeline**: Commit, reveal, and claim phases
-- **RSA Keys**: Generated for bid encryption
 
 ---
 
@@ -110,10 +132,14 @@ Configure auction parameters:
 *Creating the auction contract*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🚀</div>
+    <h2 class="text-2xl font-bold">Deploy Auction</h2>
+    <p class="text-gray-600">Sign the transaction to deploy your auction contract</p>
+  </div>
 </div>
 
-Sign the transaction to deploy your auction contract. The private key for decrypting bids is securely stored locally.
+The private key for decrypting bids is securely stored locally.
 
 ---
 
@@ -121,71 +147,78 @@ Sign the transaction to deploy your auction contract. The private key for decryp
 *Ready for bidding*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">✨</div>
+    <h2 class="text-2xl font-bold">Auction Live</h2>
+    <p class="text-gray-600">Contract deployed and ready to accept bids</p>
+  </div>
 </div>
 
-Auction is live! The contract is deployed and ready to accept encrypted bids during the commit phase.
+The auction is now live and ready to accept encrypted bids during the commit phase.
 
 ---
 
-# Step 9: Check Logs
-*Transaction verification*
-
-<div class="flex items-center justify-center h-96">
-  <img src="/public/8_checkLogs.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
-</div>
-
-View transaction logs to confirm successful deployment. All contract addresses and transaction hashes are tracked.
-
----
-
-# Step 10: Choose Auction
+# Step 9: Choose Auction
 *Select auction to bid on*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/9_bidChoice.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🎯</div>
+    <h2 class="text-2xl font-bold">Select Auction</h2>
+    <p class="text-gray-600">Browse and choose from available auctions</p>
+  </div>
 </div>
 
-Browse available auctions and select one to bid on. View auction details including price ranges and deadlines.
+View auction details including price ranges and deadlines before bidding.
 
 ---
 
-# Step 11: Submit Bid
+# Step 10: Submit Bid
 *Encrypted bidding*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">💰</div>
+    <h2 class="text-2xl font-bold">Submit Encrypted Bid</h2>
+    <div class="text-left space-y-2 mt-4">
+      <p>💵 <strong>Price</strong>: Your bid price per bond</p>
+      <p>📊 <strong>Quantity</strong>: Number of bonds to purchase</p>
+      <p>🔐 <strong>Encryption</strong>: Bid automatically encrypted with RSA</p>
+    </div>
+  </div>
 </div>
-
-Enter your bid:
-- **Price**: Your bid price per bond
-- **Quantity**: Number of bonds to purchase
-- **Encryption**: Bid is automatically encrypted with RSA
 
 ---
 
-# Step 12: Bid Submitted
+# Step 11: Bid Submitted
 *Transaction confirmed*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🎊</div>
+    <h2 class="text-2xl font-bold">Bid Successfully Submitted</h2>
+    <p class="text-gray-600">Your encrypted bid is committed to the blockchain</p>
+  </div>
 </div>
 
-Success! Your encrypted bid is committed to the blockchain. The bid details are saved locally for the reveal phase.
+The bid details are saved locally for the reveal phase.
 
 ---
 
-# Step 13: Explorer View
+# Step 12: Explorer Analysis
 *Analyzing transactions*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <div class="text-center space-y-4">
+    <div class="text-8xl">🔍</div>
+    <h2 class="text-2xl font-bold">Block Explorer</h2>
+    <div class="text-left space-y-2 mt-4">
+      <p>📋 <strong>Decode Events</strong>: View human-readable event data</p>
+      <p>📊 <strong>Track Transactions</strong>: Monitor all your activities</p>
+      <p>🔓 <strong>Reveal Bids</strong>: Decrypt bids with private key</p>
+    </div>
+  </div>
 </div>
-
-Use the built-in explorer to:
-- **Decode Events**: View human-readable event data
-- **Track Transactions**: Monitor all your activities  
-- **Reveal Bids**: Decrypt bids when you have the private key
 
 ---
 

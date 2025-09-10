@@ -1,0 +1,273 @@
+name: Deploy Simple (Working Version)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'ui/issuer/**'
+      - 'docs/**'
+      - '.github/workflows/deploy-simple.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Skip UI build for now and just deploy docs + placeholder
+      - name: Create placeholder UI
+        run: |
+          mkdir -p ui-placeholder
+          cat > ui-placeholder/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Bond Auction Platform</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      margin: 0;
+                      padding: 2rem;
+                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                      color: white;
+                      min-height: 100vh;
+                  }
+                  .container {
+                      max-width: 800px;
+                      margin: 0 auto;
+                      background: rgba(255, 255, 255, 0.1);
+                      backdrop-filter: blur(10px);
+                      padding: 3rem;
+                      border-radius: 20px;
+                      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                      text-align: center;
+                  }
+                  h1 { font-size: 2.5em; margin-bottom: 1rem; }
+                  .status {
+                      background: rgba(255, 193, 7, 0.2);
+                      border: 1px solid rgba(255, 193, 7, 0.5);
+                      padding: 2rem;
+                      border-radius: 10px;
+                      margin: 2rem 0;
+                  }
+                  .button {
+                      display: inline-block;
+                      padding: 1rem 2rem;
+                      background: rgba(255, 255, 255, 0.2);
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 50px;
+                      font-weight: bold;
+                      margin: 0.5rem;
+                      transition: all 0.3s ease;
+                  }
+                  .button:hover {
+                      background: rgba(255, 255, 255, 0.3);
+                      transform: translateY(-2px);
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🏛️ Bond Auction Platform</h1>
+                  
+                  <div class="status">
+                      <h2>🚧 Application Building</h2>
+                      <p>The React application is being rebuilt to resolve TypeScript issues.</p>
+                      <p>The documentation is available while we work on the main app.</p>
+                  </div>
+                  
+                  <a href="./docs/" class="button">📚 View Documentation</a>
+                  <a href="./landing.html" class="button">🏠 Landing Page</a>
+              </div>
+          </body>
+          </html>
+          EOF
+
+      # Build Documentation with simple slides
+      - name: Install Docs dependencies
+        working-directory: ./docs
+        run: npm ci
+
+      - name: Add Playwright for Slidev
+        working-directory: ./docs  
+        run: npx playwright install chromium
+
+      - name: Build Documentation (No Images)
+        working-directory: ./docs
+        run: |
+          echo "Building documentation with base path: /${{ github.event.repository.name }}/docs/"
+          
+          # Use the no-images version of slides if the original fails
+          npx slidev build slides.md --base /${{ github.event.repository.name }}/docs/ || {
+            echo "Original slides failed, using no-images version..."
+            npx slidev build slides-no-images.md --base /${{ github.event.repository.name }}/docs/
+          }
+
+      # Combine outputs
+      - name: Prepare deployment directory
+        run: |
+          mkdir -p deploy
+          
+          # Copy placeholder UI to root
+          cp -r ui-placeholder/* deploy/
+          
+          # Copy docs build to /docs subdirectory  
+          if [ -d "docs/dist" ]; then
+            echo "✅ Documentation build successful"
+            mkdir -p deploy/docs
+            cp -r docs/dist/* deploy/docs/
+          else
+            echo "❌ Documentation build failed"
+            mkdir -p deploy/docs
+            cat > deploy/docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Documentation - Building</title>
+              <style>
+                  body { font-family: Arial, sans-serif; padding: 2rem; text-align: center; }
+              </style>
+          </head>
+          <body>
+              <h1>📚 Documentation</h1>
+              <p>The documentation is being rebuilt. Please check back soon!</p>
+              <a href="../">← Back to main page</a>
+          </body>
+          </html>
+          EOF
+          fi
+          
+          # Create landing page
+          cat > deploy/landing.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Bond Auction Platform</title>
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                      max-width: 800px;
+                      margin: 0 auto;
+                      padding: 2rem;
+                      text-align: center;
+                      background: #f5f5f5;
+                  }
+                  .container {
+                      background: white;
+                      padding: 3rem;
+                      border-radius: 10px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                  }
+                  h1 { color: #333; }
+                  .status {
+                      background: #fff3cd;
+                      border: 1px solid #ffeaa7;
+                      padding: 1.5rem;
+                      border-radius: 8px;
+                      margin: 2rem 0;
+                      color: #856404;
+                  }
+                  .links {
+                      display: flex;
+                      gap: 2rem;
+                      justify-content: center;
+                      margin-top: 2rem;
+                  }
+                  .link-card {
+                      flex: 1;
+                      padding: 2rem;
+                      background: #f8f9fa;
+                      border-radius: 8px;
+                      text-decoration: none;
+                      color: #333;
+                      transition: all 0.3s ease;
+                  }
+                  .link-card:hover {
+                      background: #e9ecef;
+                      transform: translateY(-2px);
+                      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                  }
+                  .icon { font-size: 3rem; margin-bottom: 1rem; }
+                  @media (max-width: 600px) {
+                      .links { flex-direction: column; }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🏛️ Bond Auction Platform</h1>
+                  <p>Decentralized bond auctions with encrypted bidding</p>
+                  
+                  <div class="status">
+                      <strong>Status:</strong> The main React application is being rebuilt to resolve build issues. 
+                      Documentation is available now, and the full application will be restored soon.
+                  </div>
+                  
+                  <div class="links">
+                      <a href="./index.html" class="link-card">
+                          <div class="icon">🚧</div>
+                          <h2>Application (Building)</h2>
+                          <p>React app being rebuilt</p>
+                      </a>
+                      
+                      <a href="./docs/" class="link-card">
+                          <div class="icon">📚</div>
+                          <h2>View Documentation</h2>
+                          <p>Interactive slides and user guide</p>
+                      </a>
+                  </div>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          echo "Deployment directory contents:"
+          ls -la deploy/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./deploy
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Deploy notification
+        run: |
+          echo "✅ Deployment complete!"
+          echo "🌐 Available at: ${{ steps.deployment.outputs.page_url }}"
+          echo "📚 Docs available at: ${{ steps.deployment.outputs.page_url }}docs/"
