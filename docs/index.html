@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bond Auction Platform Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 1rem;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 1.2em;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .feature {
+            text-align: center;
+            padding: 1rem;
+        }
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 0.5rem;
+        }
+        .cta {
+            text-align: center;
+            margin-top: 3rem;
+        }
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .workflow {
+            margin: 2rem 0;
+        }
+        .workflow h3 {
+            margin-bottom: 1rem;
+        }
+        .workflow ol {
+            list-style: none;
+            counter-reset: step;
+        }
+        .workflow li {
+            counter-increment: step;
+            margin: 0.5rem 0;
+            padding-left: 2rem;
+            position: relative;
+        }
+        .workflow li::before {
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: rgba(255, 255, 255, 0.2);
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ Bond Auction Platform</h1>
+        <p class="subtitle">Complete Documentation & User Guide</p>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🔗</div>
+                <h3>Connect Wallet</h3>
+                <p>MetaMask integration</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🏛️</div>
+                <h3>Create Bonds</h3>
+                <p>Deploy ERC-20 tokens</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔨</div>
+                <h3>Run Auctions</h3>
+                <p>Encrypted sealed bids</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💰</div>
+                <h3>Submit Bids</h3>
+                <p>RSA-encrypted bidding</p>
+            </div>
+        </div>
+
+        <div class="workflow">
+            <h3>📋 Complete Workflow</h3>
+            <ol>
+                <li>Connect MetaMask wallet</li>
+                <li>Create and deploy bond token</li>
+                <li>Set up encrypted auction</li>
+                <li>Submit sealed bids</li>
+                <li>Analyze with block explorer</li>
+            </ol>
+        </div>
+
+        <div class="cta">
+            <p><strong>Ready to explore the complete user journey?</strong></p>
+            <a href="#" class="btn" onclick="window.location.href='./slides.html' || window.location.href='./dist/index.html'">
+                📚 View Interactive Slides
+            </a>
+            <a href="https://github.com/aaronp/sandbox/auctions" class="btn">
+                💻 View Source Code
+            </a>
+        </div>
+
+        <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; opacity: 0.8; font-size: 0.9em;">
+            <p>This presentation covers the complete technical implementation including smart contracts, frontend integration, and security features.</p>
+        </div>
+    </div>
+
+    <script>
+        // Try to detect if slides are available and redirect accordingly
+        fetch('./dist/index.html')
+            .then(response => {
+                if (response.ok) {
+                    // If dist exists (built slides), update the link
+                    const slideBtn = document.querySelector('.btn');
+                    slideBtn.href = './dist/index.html';
+                }
+            })
+            .catch(() => {
+                // Fallback to development setup instructions
+                console.log('Slides not built yet. Run npm run build to generate them.');
+            });
+    </script>
+</body>
+</html>

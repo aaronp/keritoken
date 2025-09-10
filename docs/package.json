@@ -1,0 +1,19 @@
+{
+  "name": "bond-auction-docs",
+  "version": "1.0.0",
+  "description": "Bond Auction Platform Documentation Slides",
+  "scripts": {
+    "dev": "slidev",
+    "build": "slidev build slides.md",
+    "export": "slidev export slides.md",
+    "preview": "slidev build slides.md --watch"
+  },
+  "dependencies": {
+    "@slidev/cli": "^0.48.0",
+    "@slidev/theme-default": "^0.22.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "playwright-chromium": "^1.40.0"
+  }
+}

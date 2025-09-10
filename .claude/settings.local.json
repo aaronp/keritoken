@@ -23,7 +23,9 @@
       "Bash(timeout 10 npm run dev)",
       "Bash(make:*)",
       "Bash(npm run dev:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(chmod:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }
