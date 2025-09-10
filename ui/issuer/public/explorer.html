@@ -1,60 +1,389 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Local Block Explorer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Local Block Explorer</title>
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .tx { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
-        .hash { font-family: monospace; background: #f5f5f5; padding: 2px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .search-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .search-section h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .search-box button {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        .search-box button:hover {
+            background: #5a67d8;
+        }
+        .result-box {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .result-header {
+            background: #f8fafc;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .result-header h3 {
+            margin: 0;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .result-content {
+            padding: 30px;
+        }
+        .property {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 20px;
+            padding: 15px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .property:last-child {
+            border-bottom: none;
+        }
+        .property-name {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .property-value {
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            color: #374151;
+            font-size: 15px;
+        }
+        .hash {
+            background: #f3f4f6;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #667eea;
+            font-weight: 500;
+        }
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .loading {
+            text-align: center;
+            padding: 60px 30px;
+            color: #6b7280;
+            font-size: 18px;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+        .logs-section {
+            margin-top: 30px;
+        }
+        .log-item {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .log-item h4 {
+            margin: 0 0 15px 0;
+            color: #374151;
+        }
+        .topics {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
-    <h1>Local Block Explorer</h1>
-    <div>
-        <label>Transaction Hash:</label>
-        <input type="text" id="txHash" placeholder="0x..." style="width: 400px;">
-        <button onclick="lookupTx()">Lookup</button>
+    <div class="header">
+        <h1>🔍 Local Block Explorer</h1>
+        <p>Explore transactions on your Hardhat local network</p>
     </div>
+
+    <div class="search-section">
+        <h3>Search Transaction</h3>
+        <div class="search-box">
+            <input type="text" id="txHash" placeholder="Enter transaction hash (0x...)" />
+            <button id="searchBtn">Search</button>
+        </div>
+    </div>
+
     <div id="result"></div>
 
-    <script>
-        const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-
-        async function lookupTx() {
-            const hash = document.getElementById('txHash').value;
-            const result = document.getElementById('result');
-            
-            if (!hash) return;
+    <script defer>
+        // Initialize after DOM and ethers library are loaded
+        let provider;
+        
+        window.addEventListener('DOMContentLoaded', function() {
+            // Wait for ethers to be available and initialize provider
+            if (typeof ethers === 'undefined') {
+                console.error('Ethers library not loaded');
+                return;
+            }
             
             try {
-                result.innerHTML = 'Loading...';
-                const tx = await provider.getTransaction(hash);
-                const receipt = await provider.getTransactionReceipt(hash);
-                
-                result.innerHTML = `
-                    <div class="tx">
-                        <h3>Transaction Details</h3>
-                        <p><strong>Hash:</strong> <span class="hash">${tx.hash}</span></p>
-                        <p><strong>From:</strong> <span class="hash">${tx.from}</span></p>
-                        <p><strong>To:</strong> <span class="hash">${tx.to || 'Contract Creation'}</span></p>
-                        <p><strong>Value:</strong> ${ethers.utils.formatEther(tx.value)} ETH</p>
-                        <p><strong>Gas Used:</strong> ${receipt ? receipt.gasUsed.toString() : 'Pending'}</p>
-                        <p><strong>Block:</strong> ${tx.blockNumber || 'Pending'}</p>
-                        <p><strong>Status:</strong> ${receipt ? (receipt.status ? 'Success' : 'Failed') : 'Pending'}</p>
-                    </div>
-                `;
+                // Initialize provider after page loads
+                provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+                console.log('Provider initialized successfully');
             } catch (error) {
-                result.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Failed to initialize provider:', error);
+                return;
+            }
+            
+            // Set up event listeners
+            const txHashInput = document.getElementById('txHash');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            txHashInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    lookupTx();
+                }
+            });
+            console.log('Enter key listener attached to input');
+        
+            searchBtn.addEventListener('click', function(e) {
+                console.log('Search button clicked');
+                e.preventDefault();
+                lookupTx();
+            });
+            
+            // Auto-fill from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const txParam = urlParams.get('tx');
+            if (txParam) {
+                txHashInput.value = txParam;
+                // Small delay to ensure provider is fully ready
+                setTimeout(function() {
+                    lookupTx();
+                }, 100);
+            }
+        });
+
+        async function lookupTx() {
+            console.log('lookupTx called, provider status:', provider ? 'initialized' : 'not initialized');
+            if (!provider) {
+                const result = document.getElementById('result');
+                result.innerHTML = '<div class="error">Provider not initialized. Please wait for the page to fully load or refresh the page.</div>';
+                console.error('Provider not initialized');
+                return;
+            }
+            
+            txHashInput.value.trim();
+            const result = document.getElementById('result');
+            
+            if (!hash) {
+                result.innerHTML = '<div class="error">Please enter a transaction hash</div>';
+                return;
+            }
+            
+            if (!hash.startsWith('0x') || hash.length !== 66) {
+                result.innerHTML = '<div class="error">Invalid transaction hash format. Should be 0x followed by 64 hex characters.</div>';
+                return;
+            }
+            
+            result.innerHTML = '<div class="result-box"><div class="loading">🔄 Searching for transaction...</div></div>';
+            
+            try {
+                const tx = await provider.getTransaction(hash);
+                if (!tx) {
+                    result.innerHTML = '<div class="error">Transaction not found</div>';
+                    return;
+                }
+                
+                const receipt = await provider.getTransactionReceipt(hash);
+                const block = tx.blockHash ? await provider.getBlock(tx.blockHash) : null;
+                
+                displayTransactionDetails(tx, receipt, block);
+                
+            } catch (error) {
+                console.error('Lookup error:', error);
+                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
             }
         }
         
-        // Auto-fill from URL params
-        const urlParams = new URLSearchParams(window.location.search);
-        const txParam = urlParams.get('tx');
-        if (txParam) {
-            document.getElementById('txHash').value = txParam;
-            lookupTx();
+        function displayTransactionDetails(tx, receipt, block) {
+            const result = document.getElementById('result');
+            
+            // Status badge
+            let statusBadge = '<span class="status-pending">⏳ Pending</span>';
+            if (receipt) {
+                statusBadge = receipt.status 
+                    ? '<span class="status-success">✅ Success</span>'
+                    : '<span class="status-failed">❌ Failed</span>';
+            }
+            
+            let html = `
+                <div class="result-box">
+                    <div class="result-header">
+                        <h3>📋 Transaction Details</h3>
+                    </div>
+                    <div class="result-content">
+                        ${createProperty('Hash', `<span class="hash">${tx.hash}</span>`)}
+                        ${createProperty('Status', statusBadge)}
+                        ${createProperty('Block Number', tx.blockNumber ? tx.blockNumber.toString() : 'Pending')}
+                        ${createProperty('From', `<span class="hash">${tx.from}</span>`)}
+                        ${createProperty('To', `<span class="hash">${tx.to || 'Contract Creation'}</span>`)}
+                        ${createProperty('Value', `${ethers.utils.formatEther(tx.value)} ETH`)}
+                        ${createProperty('Gas Limit', tx.gasLimit.toLocaleString())}
+            `;
+            
+            if (receipt) {
+                const gasUsed = receipt.gasUsed;
+                const gasPrice = tx.gasPrice;
+                const txFee = gasUsed.mul(gasPrice);
+                
+                html += createProperty('Gas Used', `${gasUsed.toLocaleString()} (${((gasUsed.toNumber() / tx.gasLimit.toNumber()) * 100).toFixed(1)}%)`);
+                html += createProperty('Gas Price', `${ethers.utils.formatUnits(gasPrice, 'gwei')} Gwei`);
+                html += createProperty('Transaction Fee', `${ethers.utils.formatEther(txFee)} ETH`);
+            }
+            
+            if (block) {
+                const timestamp = new Date(block.timestamp * 1000);
+                html += createProperty('Timestamp', timestamp.toLocaleString());
+            }
+            
+            html += createProperty('Nonce', tx.nonce.toString());
+            
+            if (tx.data && tx.data !== '0x') {
+                const dataSize = (tx.data.length - 2) / 2;
+                html += createProperty('Input Data', 
+                    tx.data.length > 42 
+                        ? `${tx.data.substring(0, 42)}... (${dataSize} bytes)` 
+                        : tx.data
+                );
+            }
+            
+            html += '</div></div>';
+            
+            // Event logs
+            if (receipt && receipt.logs && receipt.logs.length > 0) {
+                html += `
+                    <div class="result-box">
+                        <div class="result-header">
+                            <h3>📜 Event Logs (${receipt.logs.length})</h3>
+                        </div>
+                        <div class="result-content">
+                `;
+                
+                receipt.logs.forEach((log, index) => {
+                    html += `
+                        <div class="log-item">
+                            <h4>Event ${index + 1}</h4>
+                            ${createProperty('Address', `<span class="hash">${log.address}</span>`)}
+                            ${createProperty('Topics', `<div class="topics">${log.topics.join('<br>')}</div>`)}
+                            ${log.data && log.data !== '0x' ? createProperty('Data', `<span class="hash">${log.data}</span>`) : ''}
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            result.innerHTML = html;
+        }
+        
+        function createProperty(name, value) {
+            return `
+                <div class="property">
+                    <div class="property-name">${name}</div>
+                    <div class="property-value">${value}</div>
+                </div>
+            `;
         }
     </script>
 </body>

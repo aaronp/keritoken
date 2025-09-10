@@ -12,7 +12,7 @@ import { ethers } from 'ethers'
 interface BidFormData {
   price: string
   quantity: string
-  salt: string
+  salt: number
 }
 
 interface AuctionBidProps {
@@ -45,7 +45,7 @@ export function AuctionBid({
   const [bidData, setBidData] = useState<BidFormData>({
     price: '',
     quantity: '',
-    salt: Math.random().toString(36).substring(2, 15) // Generate random salt
+    salt: Math.floor(Math.random() * 1000000000) // Generate random numeric salt
   })
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -83,30 +83,30 @@ export function AuctionBid({
     }))
   }
 
-  const generateCommitmentHash = async (price: string, quantity: string, salt: string): Promise<string> => {
-    // Create commitment hash: keccak256(abi.encodePacked(price, quantity, salt, msg.sender))
+  const generateCommitmentHash = async (price: string, quantity: string, salt: number): Promise<string> => {
+    // Create commitment hash: keccak256(abi.encodePacked(msg.sender, price, quantity, salt))
+    // Must match contract: bytes32 commitment = keccak256(abi.encodePacked(msg.sender, price, quantity, salt));
     const { signer } = await getProviderAndSigner()
     const address = await signer.getAddress()
     
-    const priceWei = ethers.parseEther(price)
-    const quantityWei = ethers.parseEther(quantity)
-    const saltBytes = ethers.toUtf8Bytes(salt)
-    const addressBytes = ethers.getBytes(address)
+    // Convert to proper units matching contract expectations
+    const priceUnits = ethers.parseUnits(price.toString(), 6); // Price in USDC units (6 decimals)
+    const quantityWei = ethers.parseEther(quantity.toString()); // Quantity in bond units (18 decimals)
+    const saltBigInt = BigInt(salt)
     
-    // Create commitment hash matching the contract's expectation
+    // Use solidityPacked to match contract's abi.encodePacked
+    // Order MUST match contract: [address, price, quantity, salt]
     const commitment = ethers.keccak256(
-      ethers.concat([
-        ethers.zeroPadValue(ethers.toBeHex(priceWei), 32),
-        ethers.zeroPadValue(ethers.toBeHex(quantityWei), 32),
-        saltBytes,
-        addressBytes
-      ])
+      ethers.solidityPacked(
+        ["address", "uint256", "uint256", "uint256"],
+        [address, priceUnits, quantityWei, saltBigInt]
+      )
     )
     
     return commitment
   }
 
-  const encryptBid = async (price: string, quantity: string, salt: string): Promise<Uint8Array> => {
+  const encryptBid = async (price: string, quantity: string, salt: number): Promise<Uint8Array> => {
     try {
       // Convert hex public key back to ArrayBuffer
       const publicKeyHex = issuerPublicKey.startsWith('0x') ? issuerPublicKey.slice(2) : issuerPublicKey
@@ -526,7 +526,7 @@ export function AuctionBid({
               setBidData({
                 price: '',
                 quantity: '',
-                salt: Math.random().toString(36).substring(2, 15)
+                salt: Math.floor(Math.random() * 1000000000)
               })
             }}
             variant="outline"

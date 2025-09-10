@@ -28,15 +28,15 @@ export function AuctionCreationForm() {
   const { addAuction } = useAuctions()
   const { bonds, isLoading: bondsLoading } = useBondTokens(currentChainId)
   const { bonds: allBonds } = useBondTokens() // Get bonds from all chains as fallback
-  const { 
-    getFormDefaults, 
-    saveFormState, 
-    hasSavedState, 
-    stateAge, 
+  const {
+    getFormDefaults,
+    saveFormState,
+    hasSavedState,
+    stateAge,
     clearSavedState,
-    isUsingSavedState 
+    isUsingSavedState
   } = useAuctionFormState(currentChainId)
-  
+
   const [formData, setFormData] = useState<AuctionFormData>(() => getFormDefaults())
   const [isDeploying, setIsDeploying] = useState(false)
   const [deployedAddress, setDeployedAddress] = useState<string>('')
@@ -47,6 +47,8 @@ export function AuctionCreationForm() {
     publicKey: string
     privateKey: string
   } | null>(null)
+  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
+  const [hasUserInteracted, setHasUserInteracted] = useState(false)
 
   // Update chainId when wallet connects or changes
   useEffect(() => {
@@ -59,15 +61,26 @@ export function AuctionCreationForm() {
         console.log('Wallet not connected, using default chainId')
       }
     }
-    
+
     updateChainId()
   }, [])
-  
-  // Load form defaults on mount and when they change
+
+  // Only load saved state on initial mount if user hasn't interacted yet
   useEffect(() => {
-    const defaults = getFormDefaults()
-    setFormData(defaults)
-  }, [getFormDefaults])
+    if (!hasUserInteracted && hasSavedState) {
+      const defaults = getFormDefaults()
+      setFormData(defaults)
+    }
+  }, []) // Empty deps - only run on mount
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer)
+      }
+    }
+  }, [debounceTimer])
 
   // Debug logging for bonds
   useEffect(() => {
@@ -82,17 +95,27 @@ export function AuctionCreationForm() {
   }, [bonds, allBonds, currentChainId, bondsLoading])
 
   const handleInputChange = (field: keyof AuctionFormData, value: string) => {
+    // Mark that user has interacted
+    setHasUserInteracted(true)
+    
     const newFormData = {
       ...formData,
       [field]: value
     }
     setFormData(newFormData)
-    
-    // Save form state with debouncing (only if form has meaningful content)
+
+    // Cancel existing debounce timer
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+    }
+
+    // Save form state with proper debouncing (only if form has meaningful content)
     if (newFormData.bondTokenAddress || newFormData.bondSupply || newFormData.minPrice) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         saveFormState(newFormData)
+        setDebounceTimer(null)
       }, 1000) // Debounce for 1 second
+      setDebounceTimer(timer)
     }
   }
 
@@ -109,26 +132,26 @@ export function AuctionCreationForm() {
         true, // extractable
         ["encrypt", "decrypt"]
       )
-      
+
       // Export public key in SPKI format
       const publicKeyBuffer = await window.crypto.subtle.exportKey("spki", keyPair.publicKey)
       const publicKeyArray = new Uint8Array(publicKeyBuffer)
       const publicKeyHex = "0x" + Array.from(publicKeyArray)
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
-      
+
       // Export private key in PKCS8 format
       const privateKeyBuffer = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
       const privateKeyArray = new Uint8Array(privateKeyBuffer)
       const privateKeyHex = "0x" + Array.from(privateKeyArray)
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
-      
+
       setGeneratedKeys({
         publicKey: publicKeyHex,
         privateKey: privateKeyHex
       })
-      
+
       setFormData(prev => ({
         ...prev,
         issuerPublicKey: publicKeyHex
@@ -142,15 +165,15 @@ export function AuctionCreationForm() {
   const handleDeploy = async () => {
     setIsDeploying(true)
     setDeploymentError('')
-    
+
     try {
       // Get provider, signer, and current chain ID
       const { signer, chainId: currentChainId } = await getProviderAndSigner()
       setDeployedChainId(currentChainId)
-      
+
       // Create contract deployer
       const deployer = new ContractDeployer(signer)
-      
+
       console.log('Starting auction contract deployment...', {
         bondTokenAddress: formData.bondTokenAddress,
         paymentTokenAddress: formData.paymentTokenAddress,
@@ -163,7 +186,7 @@ export function AuctionCreationForm() {
         issuerPublicKey: formData.issuerPublicKey,
         chainId: currentChainId
       })
-      
+
       // Deploy the contract
       const result = await deployer.deployBondAuction({
         bondTokenAddress: formData.bondTokenAddress,
@@ -176,16 +199,20 @@ export function AuctionCreationForm() {
         claimDuration: parseInt(formData.claimDays),
         issuerPublicKey: formData.issuerPublicKey
       })
-      
+
       console.log('Auction contract deployed successfully:', result)
+
+      // Clear saved form state after successful deployment
+      clearSavedState()
+      setHasUserInteracted(false)
       
       // Update UI state
       setDeployedAddress(result.address)
       setTransactionHash(result.transactionHash)
-      
+
       // Find the bond name for better UX
       const bondName = recentBond?.name || 'Unknown Bond'
-      
+
       // Save the deployed auction to state
       const auctionData = {
         address: result.address,
@@ -202,9 +229,9 @@ export function AuctionCreationForm() {
         chainId: currentChainId,
         txHash: result.transactionHash
       }
-      
+
       addAuction(auctionData)
-      
+
       // Save the private key associated with this auction
       if (generatedKeys) {
         saveAuctionPrivateKey({
@@ -215,12 +242,12 @@ export function AuctionCreationForm() {
           chainId: currentChainId
         })
       }
-      
+
     } catch (error) {
       console.error('Auction deployment failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       setDeploymentError(errorMessage)
-      
+
       // Show user-friendly error message
       if (errorMessage.includes('user rejected')) {
         // User cancelled transaction
@@ -238,13 +265,13 @@ export function AuctionCreationForm() {
 
 
   const isFormValid = () => {
-    return formData.bondTokenAddress && 
-           formData.paymentTokenAddress && 
-           formData.bondSupply && 
-           formData.minPrice && 
-           formData.maxPrice && 
-           formData.issuerPublicKey &&
-           parseFloat(formData.minPrice) < parseFloat(formData.maxPrice)
+    return formData.bondTokenAddress &&
+      formData.paymentTokenAddress &&
+      formData.bondSupply &&
+      formData.minPrice &&
+      formData.maxPrice &&
+      formData.issuerPublicKey &&
+      parseFloat(formData.minPrice) < parseFloat(formData.maxPrice)
   }
 
   const calculateDeadlines = () => {
@@ -252,7 +279,7 @@ export function AuctionCreationForm() {
     const commitDeadline = new Date(now.getTime() + parseInt(formData.commitDays) * 24 * 60 * 60 * 1000)
     const revealDeadline = new Date(commitDeadline.getTime() + parseInt(formData.revealDays) * 24 * 60 * 60 * 1000)
     const claimDeadline = new Date(revealDeadline.getTime() + parseInt(formData.claimDays) * 24 * 60 * 60 * 1000)
-    
+
     return {
       commit: commitDeadline.toLocaleDateString() + ' ' + commitDeadline.toLocaleTimeString(),
       reveal: revealDeadline.toLocaleDateString() + ' ' + revealDeadline.toLocaleTimeString(),
@@ -275,13 +302,13 @@ export function AuctionCreationForm() {
         <CardContent className="space-y-4">
           <div>
             <Label>Auction Contract Address</Label>
-            <Input 
-              value={deployedAddress} 
-              readOnly 
+            <Input
+              value={deployedAddress}
+              readOnly
               className="font-mono text-sm"
             />
           </div>
-          
+
           {transactionHash && (
             <div>
               <Label>Transaction Hash</Label>
@@ -303,7 +330,7 @@ export function AuctionCreationForm() {
               </div>
             </div>
           )}
-          
+
           {generatedKeys && (
             <Card className="border-yellow-200 bg-yellow-50">
               <CardHeader>
@@ -315,9 +342,9 @@ export function AuctionCreationForm() {
               <CardContent className="space-y-3">
                 <div>
                   <Label className="text-yellow-800">Private Key (Keep Secure!)</Label>
-                  <Textarea 
+                  <Textarea
                     value={generatedKeys.privateKey}
-                    readOnly 
+                    readOnly
                     className="font-mono text-xs h-20 text-gray-900 bg-white"
                   />
                   <p className="text-xs text-yellow-700 mt-1">
@@ -326,9 +353,9 @@ export function AuctionCreationForm() {
                 </div>
                 <div>
                   <Label className="text-yellow-800">Public Key (Already in Contract)</Label>
-                  <Textarea 
+                  <Textarea
                     value={generatedKeys.publicKey}
-                    readOnly 
+                    readOnly
                     className="font-mono text-xs h-16 text-gray-900 bg-white"
                   />
                 </div>
@@ -347,12 +374,13 @@ export function AuctionCreationForm() {
             </div>
           </div>
 
-          <Button 
+          <Button
             onClick={() => {
               setDeployedAddress('')
               setTransactionHash('')
               setDeploymentError('')
               setGeneratedKeys(null)
+              setHasUserInteracted(false)
               setFormData({
                 bondTokenAddress: '',
                 paymentTokenAddress: '',
@@ -385,25 +413,26 @@ export function AuctionCreationForm() {
           <div className="flex items-center space-x-2">
             <RefreshCw className="h-4 w-4 text-primary" />
             <span className="text-sm text-foreground">
-              {isUsingSavedState 
+              {isUsingSavedState
                 ? `Using saved form data from ${stateAge < 60 ? `${stateAge} minutes ago` : `${Math.floor(stateAge / 60)} hours ago`}`
                 : `Form restored from ${stateAge < 60 ? `${stateAge} minutes ago` : `${Math.floor(stateAge / 60)} hours ago`}`
               }
             </span>
           </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => {
               clearSavedState()
               setFormData(getFormDefaults())
+              setHasUserInteracted(false)
             }}
           >
             Clear
           </Button>
         </div>
       )}
-      
+
       {/* Contract Addresses */}
       <div className="space-y-4">
         <div className="space-y-2">
@@ -413,7 +442,7 @@ export function AuctionCreationForm() {
               // Use bonds from current chain, fallback to all bonds if none on current chain
               const availableBonds = bonds.length > 0 ? bonds : allBonds;
               const showingAllChains = bonds.length === 0 && allBonds.length > 0;
-              
+
               return availableBonds.length > 0 ? (
                 <>
                   {showingAllChains && (
@@ -430,15 +459,15 @@ export function AuctionCreationForm() {
                         .sort((a, b) => (b.deployedAt || 0) - (a.deployedAt || 0)) // Sort by deployment date, newest first
                         .map((bond) => {
                           const deployedDate = bond.deployedAt ? new Date(bond.deployedAt) : null;
-                          const timeDisplay = deployedDate ? 
-                            `${deployedDate.toLocaleDateString()} ${deployedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` 
+                          const timeDisplay = deployedDate ?
+                            `${deployedDate.toLocaleDateString()} ${deployedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                             : 'Unknown time';
-                          
-                          const networkName = bond.chainId === 31337 ? 'Local' : 
-                                            bond.chainId === 84532 ? 'Base Sepolia' :
-                                            bond.chainId === 8453 ? 'Base' : 
-                                            `Chain ${bond.chainId}`;
-                          
+
+                          const networkName = bond.chainId === 31337 ? 'Local' :
+                            bond.chainId === 84532 ? 'Base Sepolia' :
+                              bond.chainId === 8453 ? 'Base' :
+                                `Chain ${bond.chainId}`;
+
                           return (
                             <SelectItem key={bond.address} value={bond.address}>
                               <div className="flex flex-col">
@@ -670,7 +699,7 @@ export function AuctionCreationForm() {
               </div>
               <div className="space-y-2">
                 <Label>Public Key (for contract)</Label>
-                <Textarea 
+                <Textarea
                   value={generatedKeys.publicKey}
                   readOnly
                   className="font-mono text-xs h-16 text-gray-900 bg-white"
@@ -724,7 +753,7 @@ export function AuctionCreationForm() {
       )}
 
       {/* Deploy Button */}
-      <Button 
+      <Button
         onClick={handleDeploy}
         disabled={!isFormValid() || isDeploying}
         className="w-full h-12"
