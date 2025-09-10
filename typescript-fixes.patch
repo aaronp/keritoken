@@ -1,0 +1,108 @@
+--- Fix TypeScript Linting Errors for GitHub Actions Build ---
+
+This patch fixes all TypeScript errors preventing the build in GitHub Actions.
+Apply these changes to the respective files:
+
+=== src/components/AuctionBid.tsx ===
+1. Remove unused imports:
+   - Remove: import { Separator } from '@/components/ui/separator'
+   - Remove: TrendingUp, Clock from lucide-react import
+
+2. Remove unused prop:
+   - Remove: bondTokenAddress: string from AuctionBidProps interface
+   - Remove: bondTokenAddress from destructured props
+
+3. Fix error handling:
+   Replace error handling blocks with proper typing:
+
+   // Around line 304
+   } catch (bidCheckError: any) {
+     console.log('Could not check existing bid (might be expected):', bidCheckError.message)
+   }
+
+   // Around line 310-314
+   } catch (readError: any) {
+     console.error('Contract read test failed:', readError)
+     console.error('Read error details:', {
+       message: readError.message,
+       code: readError.code,
+       data: readError.data
+     })
+     throw new Error(`Pre-flight validation failed: ${readError.message}`)
+   }
+
+4. Fix ethers v6 Interface issues:
+   Replace line 224:
+   - Old: const interfaceFunctions = contractInterface.functions
+   - New: const interfaceFunctions = contractInterface.fragments?.filter(f => f.type === 'function')
+
+   Replace lines 234-243:
+   ```typescript
+   if (contractInterface.fragments) {
+     const functionFragments = contractInterface.fragments.filter((f: any) => f.type === 'function')
+     console.log('Function fragments:', functionFragments.map((f: any) => f.name))
+   }
+   
+   // Remove the forEachFunction block as it doesn't exist in ethers v6
+   ```
+
+   Fix line 348-349:
+   ```typescript
+   if (auctionContract.interface) {
+     const commitBidFunction = auctionContract.interface.getFunction('commitBid')
+     if (commitBidFunction) {
+       console.log('commitBid function signature:', commitBidFunction.format())
+       console.log('commitBid function selector:', commitBidFunction.selector)
+     }
+   }
+   ```
+
+=== src/components/AuctionCreationForm.tsx ===
+1. Remove unused import:
+   - Remove: import { CalendarIcon } from 'lucide-react'
+
+=== src/components/BidHistory.tsx ===
+1. Remove unused import:
+   - Remove type import: import { type BidData } from '@/lib/storage'
+   - Keep only: import { useBids } from '@/hooks/useAppState'
+
+=== src/components/BondCreationForm.tsx ===
+1. Remove unused import:
+   - Remove: CardDescription from the card import
+
+=== src/components/Explorer.tsx ===
+1. Remove unused imports:
+   - Remove: import { loadAppState, ... } from '@/lib/storage'
+   - Keep only what's actually used: import { getAuctionPrivateKey, getAllTransactions, type TransactionRecord } from '@/lib/storage'
+
+2. Remove unused interface:
+   - Remove: interface LogEntry (lines 20-25)
+
+3. Remove unused parameter:
+   - Line 175: Remove contractType parameter or use it:
+   ```typescript
+   const getEventMetadata = (eventName: string, _contractType: string) => {
+   ```
+
+=== src/components/StorageDebug.tsx ===
+1. Remove unused destructuring:
+   - Change: const { state, clearAll } = useStorage()
+   - To: const { clearAll } = useStorage()
+
+=== src/components/WalletConnect.tsx ===
+1. Remove unused import:
+   - Remove: ChevronDown from lucide-react import
+
+=== src/lib/contracts.ts ===
+1. Remove unused variable:
+   - Line 291: Remove the unused provider variable declaration
+
+=== src/lib/storage.ts ===
+1. Fix type assertion in safeJsonParse:
+   Line 320, in importAppState function:
+   ```typescript
+   if (typeof parsed !== 'object' || !('bonds' in parsed) || !('auctions' in parsed) || 
+       !Array.isArray(parsed.bonds) || !Array.isArray(parsed.auctions)) {
+     return false
+   }
+   ```
