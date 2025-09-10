@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ExternalLink, Search, AlertCircle, Coins, Gavel, Lock } from 'lucide-react'
 import { ethers } from 'ethers'
 import { getBlockExplorerUrl, BOND_TOKEN_ABI, BOND_AUCTION_ABI, MOCK_USDC_ABI } from '@/lib/contracts'
-import { useBondTokens, useAuctions } from '@/hooks/useAppState'
-import { loadAppState } from '@/lib/storage'
+import { useBondTokens, useAuctions, useBids } from '@/hooks/useAppState'
+import { loadAppState, getAuctionPrivateKey, getAllTransactions, type TransactionRecord } from '@/lib/storage'
 
 interface TransactionResult {
   tx: ethers.TransactionResponse
@@ -56,17 +57,25 @@ export function Explorer() {
   // Load local storage data for contract identification
   const { bonds } = useBondTokens() // Get all bonds across all chains
   const { auctions } = useAuctions() // Get all auctions across all chains
+  const { getBidByTransactionHash } = useBids() // Get bid data
+
+  // Get all transactions for dropdown
+  const [allTransactions, setAllTransactions] = useState<TransactionRecord[]>([])
+
+  useEffect(() => {
+    setAllTransactions(getAllTransactions())
+  }, [bonds, auctions]) // Refresh when contracts change
 
   // Contract interfaces for event decoding
   const bondTokenInterface = new ethers.Interface(BOND_TOKEN_ABI)
-  const bondAuctionInterface = new ethers.Interface(BOND_AUCTION_ABI)  
+  const bondAuctionInterface = new ethers.Interface(BOND_AUCTION_ABI)
   const mockUSDCInterface = new ethers.Interface(MOCK_USDC_ABI)
 
   // Function to identify contracts from local storage
   const identifyContract = (address: string): ContractInfo | null => {
     // Normalize address for comparison
     const normalizedAddress = address.toLowerCase()
-    
+
     // Check if it's a known bond token
     const bondToken = bonds.find(bond => bond.address.toLowerCase() === normalizedAddress)
     if (bondToken) {
@@ -109,7 +118,7 @@ export function Explorer() {
   const decodeEventLog = (log: ethers.Log): DecodedEvent | null => {
     // First, try to identify the contract from local storage
     const contractInfo = identifyContract(log.address)
-    
+
     if (contractInfo) {
       // Use the specific ABI for this known contract
       try {
@@ -165,52 +174,93 @@ export function Explorer() {
   // Get event metadata for better display
   const getEventMetadata = (eventName: string, contractType: string) => {
     const eventMetadata: Record<string, { icon: React.ComponentType<any>, description: string, color: string }> = {
-      'Transfer': { 
-        icon: Coins, 
+      'Transfer': {
+        icon: Coins,
         description: 'Token transfer between addresses',
         color: 'bg-blue-100 text-blue-800 border-blue-200'
       },
-      'BidCommitted': { 
-        icon: Lock, 
+      'BidCommitted': {
+        icon: Lock,
         description: 'Encrypted bid submitted to auction',
         color: 'bg-green-100 text-green-800 border-green-200'
       },
-      'BidRevealed': { 
-        icon: Search, 
+      'BidRevealed': {
+        icon: Search,
         description: 'Bid details revealed during reveal phase',
         color: 'bg-purple-100 text-purple-800 border-purple-200'
       },
-      'AuctionFinalized': { 
-        icon: Gavel, 
+      'AuctionFinalized': {
+        icon: Gavel,
         description: 'Auction completed with clearing price set',
         color: 'bg-orange-100 text-orange-800 border-orange-200'
       },
-      'TokensClaimed': { 
-        icon: Coins, 
+      'TokensClaimed': {
+        icon: Coins,
         description: 'Auction winner claimed their tokens',
         color: 'bg-emerald-100 text-emerald-800 border-emerald-200'
       },
-      'RoleGranted': { 
-        icon: Lock, 
+      'RoleGranted': {
+        icon: Lock,
         description: 'Access control role granted',
         color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
       },
-      'Approval': { 
-        icon: Lock, 
+      'Approval': {
+        icon: Lock,
         description: 'Token approval granted',
         color: 'bg-yellow-100 text-yellow-800 border-yellow-200'
       },
-      'OwnershipTransferred': { 
-        icon: Lock, 
+      'OwnershipTransferred': {
+        icon: Lock,
         description: 'Contract ownership transferred',
         color: 'bg-red-100 text-red-800 border-red-200'
       }
     }
 
-    return eventMetadata[eventName] || { 
-      icon: AlertCircle, 
+    return eventMetadata[eventName] || {
+      icon: AlertCircle,
       description: 'Unknown event type',
       color: 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  // Function to decrypt bid using private key
+  const decryptBid = async (encryptedBidHex: string, privateKeyHex: string): Promise<any> => {
+    try {
+      // Convert hex strings to buffers
+      const encryptedData = new Uint8Array(
+        encryptedBidHex.slice(2).match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+      )
+      const privateKeyData = new Uint8Array(
+        privateKeyHex.slice(2).match(/.{1,2}/g)!.map(byte => parseInt(byte, 16))
+      )
+
+      // Import private key for decryption
+      const privateKey = await window.crypto.subtle.importKey(
+        "pkcs8",
+        privateKeyData,
+        {
+          name: "RSA-OAEP",
+          hash: "SHA-256"
+        },
+        false,
+        ["decrypt"]
+      )
+
+      // Decrypt the data
+      const decryptedBuffer = await window.crypto.subtle.decrypt(
+        {
+          name: "RSA-OAEP"
+        },
+        privateKey,
+        encryptedData
+      )
+
+      // Convert to string and parse JSON
+      const decryptedText = new TextDecoder().decode(decryptedBuffer)
+      return JSON.parse(decryptedText)
+    } catch (error) {
+      console.error('Decryption failed:', error)
+      throw new Error('Failed to decrypt bid data')
     }
   }
 
@@ -240,10 +290,10 @@ export function Explorer() {
         }
       } else if (typeof value === 'string' && value.startsWith('0x')) {
         // Special handling for important fields that shouldn't be truncated
-        const isImportantField = key.toLowerCase().includes('encryptedbid') || 
-                                key.toLowerCase().includes('encrypted') ||
-                                key.toLowerCase().includes('data')
-        
+        const isImportantField = key.toLowerCase().includes('encryptedbid') ||
+          key.toLowerCase().includes('encrypted') ||
+          key.toLowerCase().includes('data')
+
         // Handle addresses and hashes
         if (value.length === 42) {
           // Ethereum address
@@ -256,7 +306,7 @@ export function Explorer() {
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
                   Show full address
                 </summary>
-                <div className="mt-1 p-2 bg-gray-100 rounded font-mono text-xs break-all">
+                <div className="mt-1 p-2 bg-muted rounded font-mono text-xs break-all text-foreground">
                   {value}
                 </div>
               </details>
@@ -273,7 +323,7 @@ export function Explorer() {
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
                   Show full hash
                 </summary>
-                <div className="mt-1 p-2 bg-gray-100 rounded font-mono text-xs break-all">
+                <div className="mt-1 p-2 bg-muted rounded font-mono text-xs break-all text-foreground">
                   {value}
                 </div>
               </details>
@@ -296,8 +346,8 @@ export function Explorer() {
                 <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
                   Show full encrypted data
                 </summary>
-                <div className="mt-2 p-3 bg-gray-100 rounded border">
-                  <div className="font-mono text-xs break-all leading-relaxed">
+                <div className="mt-2 p-3 bg-muted rounded border">
+                  <div className="font-mono text-xs break-all leading-relaxed text-foreground">
                     {value}
                   </div>
                   <div className="mt-2 flex items-center space-x-2">
@@ -309,7 +359,7 @@ export function Explorer() {
                     >
                       Copy
                     </Button>
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-muted-foreground">
                       Length: {value.length} characters
                     </span>
                   </div>
@@ -344,6 +394,97 @@ export function Explorer() {
     } catch (error) {
       return String(value)
     }
+  }
+
+  // Component for bid reveal functionality
+  const BidRevealButton = ({ log, decodedEvent }: { log: ethers.Log, decodedEvent: DecodedEvent }) => {
+    const [isRevealing, setIsRevealing] = useState(false)
+    const [revealedBid, setRevealedBid] = useState<any>(null)
+    const [revealError, setRevealError] = useState<string>('')
+
+    // Check if this is a BidCommitted event with encrypted bid data
+    if (decodedEvent.name !== 'BidCommitted' || !decodedEvent.args.encryptedBid) {
+      return null
+    }
+
+    // Get the stored bid data and private key
+    const bidData = getBidByTransactionHash(result?.tx.hash || '')
+    const privateKey = getAuctionPrivateKey(log.address)
+
+    // Only show if we have the private key for this auction
+    if (!privateKey) {
+      return null
+    }
+
+    const handleRevealBid = async () => {
+      if (!bidData) {
+        setRevealError('Bid data not found in local storage')
+        return
+      }
+
+      setIsRevealing(true)
+      setRevealError('')
+
+      try {
+        const decryptedBid = await decryptBid(decodedEvent.args.encryptedBid, privateKey)
+        setRevealedBid(decryptedBid)
+      } catch (error) {
+        console.error('Failed to reveal bid:', error)
+        setRevealError('Failed to decrypt bid data')
+      } finally {
+        setIsRevealing(false)
+      }
+    }
+
+    return (
+      <div className="mt-3 space-y-3">
+        {!revealedBid && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRevealBid}
+            disabled={isRevealing}
+            className="flex items-center space-x-2"
+          >
+            <Lock className="h-3 w-3" />
+            <span>{isRevealing ? 'Revealing...' : 'Reveal Bid'}</span>
+          </Button>
+        )}
+
+        {revealError && (
+          <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800">
+            {revealError}
+          </div>
+        )}
+
+        {revealedBid && (
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="text-green-800 text-sm flex items-center space-x-2">
+                <Lock className="h-4 w-4" />
+                <span>🔓 Decrypted Bid Details</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs text-gray-900">
+              {formatProperty('Bid Price', `$${revealedBid.price}`)}
+              {formatProperty('Quantity', `${revealedBid.quantity} bonds`)}
+              {formatProperty('Salt', revealedBid.salt?.toString())}
+              {formatProperty('Bidder',
+                <span className="bg-muted px-2 py-1 rounded font-mono text-foreground">
+                  {revealedBid.bidder?.slice(0, 8)}...{revealedBid.bidder?.slice(-6)}
+                </span>
+              )}
+              {formatProperty('Timestamp',
+                revealedBid.timestamp ? new Date(revealedBid.timestamp).toLocaleString() : 'N/A'
+              )}
+              {formatProperty('Total Value',
+                `$${(parseFloat(revealedBid.price) * parseFloat(revealedBid.quantity)).toLocaleString()}`
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    )
   }
 
   // Initialize provider on component mount
@@ -393,7 +534,7 @@ export function Explorer() {
 
     try {
       console.log('Looking up transaction:', txHash)
-      
+
       const tx = await provider.getTransaction(txHash)
       if (!tx) {
         setError('Transaction not found')
@@ -404,7 +545,7 @@ export function Explorer() {
       const block = tx.blockHash ? await provider.getBlock(tx.blockHash) : null
 
       setResult({ tx, receipt, block })
-      
+
     } catch (err) {
       console.error('Lookup error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
@@ -422,7 +563,7 @@ export function Explorer() {
 
   const formatProperty = (name: string, value: React.ReactNode) => (
     <div className="grid grid-cols-[200px_1fr] gap-4 py-3 border-b border-border last:border-b-0">
-      <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+      <div className="text-sm font-medium text-foreground/70 uppercase tracking-wide">
         {name}
       </div>
       <div className="font-mono text-sm break-all">
@@ -435,7 +576,7 @@ export function Explorer() {
     if (!receipt) {
       return <Badge variant="secondary">⏳ Pending</Badge>
     }
-    return receipt.status === 1 
+    return receipt.status === 1
       ? <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">✅ Success</Badge>
       : <Badge variant="destructive">❌ Failed</Badge>
   }
@@ -443,46 +584,105 @@ export function Explorer() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header */}
-        <div className="text-center space-y-4 mb-8">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-lg">
-            <h1 className="text-3xl font-light mb-2">🔍 Local Block Explorer</h1>
-            <p className="opacity-90">Explore transactions on your Hardhat local network</p>
-          </div>
-        </div>
 
         {/* Search Section */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>Search Transaction</CardTitle>
+            <CardDescription>
+              Choose from your transactions or enter a hash manually
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Input
-                placeholder="Enter transaction hash (0x...)"
-                value={txHash}
-                onChange={(e) => setTxHash(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="font-mono"
-              />
-              <Button 
-                onClick={handleSearch} 
-                disabled={isLoading}
-                className="px-8"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
-                  </>
-                )}
-              </Button>
+          <CardContent className="space-y-4">
+            {allTransactions.length > 0 && (
+              <div className="space-y-2">
+                <Label>Your Transactions</Label>
+                <Select onValueChange={(value) => setTxHash(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose from your transaction history" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allTransactions.map((tx) => {
+                      const getTypeIcon = (type: string) => {
+                        switch (type) {
+                          case 'bond': return '🏛️'
+                          case 'auction': return '🔨'
+                          case 'bid': return '💰'
+                          default: return '📝'
+                        }
+                      }
+
+                      const getTypeBadge = (type: string) => {
+                        switch (type) {
+                          case 'bond': return 'Bond Creation'
+                          case 'auction': return 'Auction Deploy'
+                          case 'bid': return 'Bid Submitted'
+                          default: return 'Transaction'
+                        }
+                      }
+
+                      return (
+                        <SelectItem key={tx.hash} value={tx.hash}>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center space-x-3">
+                              <span className="text-lg">{getTypeIcon(tx.type)}</span>
+                              <div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium">{tx.description}</span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {getTypeBadge(tx.type)}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-muted-foreground font-mono">
+                                  {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)} • {new Date(tx.timestamp).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Or Enter Transaction Hash</Label>
+              <div className="flex gap-4">
+                <Input
+                  placeholder="Enter transaction hash (0x...)"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  className="font-mono"
+                />
+                <Button
+                  onClick={handleSearch}
+                  disabled={isLoading || !txHash}
+                  className="px-8"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Search
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
+
+            {allTransactions.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                <p className="text-sm">No transactions found in local storage.</p>
+                <p className="text-xs mt-1">Deploy bonds, create auctions, or submit bids to see them here.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -503,7 +703,7 @@ export function Explorer() {
           <Card className="mb-8">
             <CardContent className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">🔄 Searching for transaction...</p>
+              <p className="text-foreground text-lg">🔄 Searching for transaction...</p>
             </CardContent>
           </Card>
         )}
@@ -519,9 +719,9 @@ export function Explorer() {
                   uniqueContracts.set(log.address, identifyContract(log.address))
                 }
               })
-              
+
               const knownContracts = Array.from(uniqueContracts.entries()).filter(([_, info]) => info !== null)
-              
+
               return knownContracts.length > 0 ? (
                 <Card className="border-green-200 bg-green-50">
                   <CardHeader>
@@ -529,7 +729,7 @@ export function Explorer() {
                       <Search className="h-5 w-5" />
                       <span>Known Contracts in Transaction</span>
                     </CardTitle>
-                    <CardDescription className="text-green-700">
+                    <CardDescription className="text-green-800">
                       These contracts are recognized from your local deployment history
                     </CardDescription>
                   </CardHeader>
@@ -547,12 +747,12 @@ export function Explorer() {
                               </span>
                             )}
                             {info!.bondTokenName && (
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-muted-foreground">
                                 for {info!.bondTokenName}
                               </span>
                             )}
                           </div>
-                          <div className="text-xs font-mono bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                          <div className="text-xs font-mono bg-muted text-foreground px-2 py-1 rounded">
                             {address.slice(0, 8)}...{address.slice(-6)}
                           </div>
                         </div>
@@ -579,7 +779,7 @@ export function Explorer() {
                 {formatProperty('To', <span className="bg-muted px-2 py-1 rounded text-primary font-medium">{result.tx.to || 'Contract Creation'}</span>)}
                 {formatProperty('Value', `${ethers.formatEther(result.tx.value)} ETH`)}
                 {formatProperty('Gas Limit', result.tx.gasLimit.toLocaleString())}
-                
+
                 {result.receipt && (
                   <>
                     {formatProperty('Gas Used', `${result.receipt.gasUsed.toLocaleString()} (${((Number(result.receipt.gasUsed) / Number(result.tx.gasLimit)) * 100).toFixed(1)}%)`)}
@@ -587,18 +787,18 @@ export function Explorer() {
                     {formatProperty('Transaction Fee', `${ethers.formatEther(result.receipt.gasUsed * result.tx.gasPrice!)} ETH`)}
                   </>
                 )}
-                
+
                 {result.block && formatProperty('Timestamp', new Date(result.block.timestamp * 1000).toLocaleString())}
                 {formatProperty('Nonce', result.tx.nonce.toString())}
-                
+
                 {result.tx.data && result.tx.data !== '0x' && (
-                  formatProperty('Input Data', 
-                    result.tx.data.length > 42 
+                  formatProperty('Input Data',
+                    result.tx.data.length > 42
                       ? `${result.tx.data.substring(0, 42)}... (${(result.tx.data.length - 2) / 2} bytes)`
                       : result.tx.data
                   )
                 )}
-                
+
                 {/* Block Explorer Link */}
                 <div className="pt-4 flex justify-end">
                   <Button
@@ -630,7 +830,7 @@ export function Explorer() {
                 <CardContent className="space-y-4">
                   {result.receipt.logs.map((log, index) => {
                     const decodedEvent = decodeEventLog(log)
-                    
+
                     if (decodedEvent) {
                       const IconComponent = decodedEvent.icon
                       return (
@@ -641,14 +841,14 @@ export function Explorer() {
                                 <IconComponent className="h-3 w-3 mr-1" />
                                 {decodedEvent.name}
                               </Badge>
-                              <div className="flex items-center space-x-2 text-sm font-normal text-gray-600">
+                              <div className="flex items-center space-x-2 text-sm font-normal text-muted-foreground">
                                 <span>{decodedEvent.contractType}</span>
                                 {decodedEvent.contractInfo && (
                                   <>
                                     {decodedEvent.contractInfo.name && (
                                       <Badge variant="outline" className="text-xs">
-                                        {decodedEvent.contractInfo.symbol ? 
-                                          `${decodedEvent.contractInfo.name} (${decodedEvent.contractInfo.symbol})` : 
+                                        {decodedEvent.contractInfo.symbol ?
+                                          `${decodedEvent.contractInfo.name} (${decodedEvent.contractInfo.symbol})` :
                                           decodedEvent.contractInfo.name
                                         }
                                       </Badge>
@@ -665,31 +865,31 @@ export function Explorer() {
                             <CardDescription className="text-sm">
                               {decodedEvent.description}
                               {decodedEvent.contractInfo && (
-                                <span className="ml-2 text-green-600 font-medium">
+                                <span className="ml-2 text-green-700 font-medium">
                                   • Known Contract
                                 </span>
                               )}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-0">
-                            {formatProperty('Contract Address', <span className="bg-background px-2 py-1 rounded">{log.address}</span>)}
-                            
+                            {formatProperty('Contract Address', <span className="bg-muted px-2 py-1 rounded text-foreground">{log.address}</span>)}
+
                             {/* Decoded Event Arguments */}
                             {Object.entries(decodedEvent.args).map(([key, value]) => (
                               <div key={key}>
                                 {formatProperty(
-                                  key.charAt(0).toUpperCase() + key.slice(1), 
+                                  key.charAt(0).toUpperCase() + key.slice(1),
                                   formatEventArg(key, value, decodedEvent.name)
                                 )}
                               </div>
                             ))}
-                            
+
                             {/* Raw Data (Collapsible) */}
                             <details className="mt-4">
-                              <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                              <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground">
                                 View Raw Data
                               </summary>
-                              <div className="mt-2 space-y-2 bg-background p-3 rounded border text-xs">
+                              <div className="mt-2 space-y-2 bg-muted p-3 rounded border text-xs text-foreground">
                                 <div>
                                   <strong>Signature:</strong> {decodedEvent.signature}
                                 </div>
@@ -711,6 +911,9 @@ export function Explorer() {
                                 )}
                               </div>
                             </details>
+
+                            {/* Bid Reveal Button for BidCommitted events */}
+                            <BidRevealButton log={log} decodedEvent={decodedEvent} />
                           </CardContent>
                         </Card>
                       )
@@ -730,16 +933,16 @@ export function Explorer() {
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-0">
-                            {formatProperty('Contract Address', <span className="bg-background px-2 py-1 rounded">{log.address}</span>)}
-                            {formatProperty('Topics', 
-                              <div className="bg-background p-3 rounded text-xs leading-relaxed font-mono">
+                            {formatProperty('Contract Address', <span className="bg-muted px-2 py-1 rounded text-foreground">{log.address}</span>)}
+                            {formatProperty('Topics',
+                              <div className="bg-muted p-3 rounded text-xs leading-relaxed font-mono text-foreground">
                                 {log.topics.map((topic, i) => (
                                   <div key={i}>{i}: {topic}</div>
                                 ))}
                               </div>
                             )}
-                            {log.data && log.data !== '0x' && formatProperty('Data', 
-                              <div className="bg-background p-3 rounded text-xs font-mono break-all">
+                            {log.data && log.data !== '0x' && formatProperty('Data',
+                              <div className="bg-muted p-3 rounded text-xs font-mono break-all text-foreground">
                                 {log.data}
                               </div>
                             )}

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Lock, DollarSign, TrendingUp, Clock, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react'
 import { ContractInteractor, getProviderAndSigner, getBlockExplorerUrl } from '@/lib/contracts'
+import { useBids } from '@/hooks/useAppState'
 import { ethers } from 'ethers'
 
 interface BidFormData {
@@ -53,6 +54,9 @@ export function AuctionBid({
   const [transactionHash, setTransactionHash] = useState<string>('')
   const [bidError, setBidError] = useState<string>('')
   const [auctionPhase, setAuctionPhase] = useState<'commit' | 'reveal' | 'claim' | 'ended'>('commit')
+  
+  // Hook for bid management
+  const { addBid } = useBids()
   
   // Calculate auction phase based on timestamps
   useEffect(() => {
@@ -398,7 +402,22 @@ export function AuctionBid({
         setTransactionHash(receipt.hash)
         setBidSubmitted(true)
         
-        // Store bid data locally for reveal phase
+        // Save bid data to local storage using new bid management system
+        const bidderAddress = await signer.getAddress()
+        addBid({
+          auctionAddress,
+          bidderAddress,
+          transactionHash: receipt.hash,
+          price: bidData.price,
+          quantity: bidData.quantity,
+          salt: bidData.salt,
+          commitment,
+          encryptedBid: ethers.hexlify(encryptedBid),
+          chainId,
+          blockNumber: receipt.blockNumber
+        })
+        
+        // Keep the old localStorage for backwards compatibility
         localStorage.setItem(`bid_${auctionAddress}_${receipt.hash}`, JSON.stringify({
           price: bidData.price,
           quantity: bidData.quantity,

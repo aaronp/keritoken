@@ -226,6 +226,7 @@ export function AuctionCreationForm() {
         revealDays: formData.revealDays,
         claimDays: formData.claimDays,
         publicKey: formData.issuerPublicKey,
+        privateKey: generatedKeys?.privateKey, // Save private key for bid decryption
         chainId: currentChainId,
         txHash: result.transactionHash
       }

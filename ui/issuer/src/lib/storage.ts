@@ -30,9 +30,25 @@ export interface AuctionData {
   revealDays: string
   claimDays: string
   publicKey: string
+  privateKey?: string // Store private key for bid decryption
   deployedAt: number
   txHash?: string
   chainId: number
+}
+
+export interface BidData {
+  id: string // Unique identifier
+  auctionAddress: string
+  bidderAddress: string
+  transactionHash: string
+  price: string
+  quantity: string
+  salt: number
+  commitment: string
+  encryptedBid: string
+  submittedAt: number
+  chainId: number
+  blockNumber?: number
 }
 
 export interface WalletState {
@@ -73,6 +89,7 @@ export interface FormStates {
 export interface AppState {
   bonds: BondTokenData[]
   auctions: AuctionData[]
+  bids: BidData[]
   wallet: WalletState
   formStates: FormStates
   preferences: {
@@ -89,6 +106,7 @@ const CURRENT_VERSION = '1.0.0'
 const defaultState: AppState = {
   bonds: [],
   auctions: [],
+  bids: [],
   wallet: {},
   formStates: {},
   preferences: {
@@ -412,4 +430,143 @@ export function getFormStateAge(formType: 'bond' | 'auction'): number | null {
   if (!formState) return null
   
   return Math.floor((Date.now() - formState.lastUpdated) / (1000 * 60))
+}
+
+/**
+ * Add a bid record
+ */
+export function addBid(bidData: Omit<BidData, 'id' | 'submittedAt'>): BidData {
+  const state = loadAppState()
+  const bid: BidData = {
+    ...bidData,
+    id: `${bidData.auctionAddress}_${bidData.transactionHash}_${Date.now()}`,
+    submittedAt: Date.now()
+  }
+  
+  state.bids.push(bid)
+  saveAppState(state)
+  return bid
+}
+
+/**
+ * Get bids for a specific auction
+ */
+export function getBidsForAuction(auctionAddress: string): BidData[] {
+  const state = loadAppState()
+  return state.bids.filter(bid => 
+    bid.auctionAddress.toLowerCase() === auctionAddress.toLowerCase()
+  ).sort((a, b) => b.submittedAt - a.submittedAt)
+}
+
+/**
+ * Get bids by bidder address
+ */
+export function getBidsByBidder(bidderAddress: string): BidData[] {
+  const state = loadAppState()
+  return state.bids.filter(bid => 
+    bid.bidderAddress.toLowerCase() === bidderAddress.toLowerCase()
+  ).sort((a, b) => b.submittedAt - a.submittedAt)
+}
+
+/**
+ * Get bid by transaction hash
+ */
+export function getBidByTransactionHash(transactionHash: string): BidData | null {
+  const state = loadAppState()
+  return state.bids.find(bid => 
+    bid.transactionHash.toLowerCase() === transactionHash.toLowerCase()
+  ) || null
+}
+
+/**
+ * Get all bids for a chain
+ */
+export function getBidsForChain(chainId: number): BidData[] {
+  const state = loadAppState()
+  return state.bids.filter(bid => bid.chainId === chainId)
+    .sort((a, b) => b.submittedAt - a.submittedAt)
+}
+
+/**
+ * Update auction with private key
+ */
+export function updateAuctionPrivateKey(auctionAddress: string, privateKey: string): boolean {
+  const state = loadAppState()
+  const auctionIndex = state.auctions.findIndex(auction => 
+    auction.address.toLowerCase() === auctionAddress.toLowerCase()
+  )
+  
+  if (auctionIndex !== -1) {
+    state.auctions[auctionIndex].privateKey = privateKey
+    saveAppState(state)
+    return true
+  }
+  return false
+}
+
+/**
+ * Get auction private key
+ */
+export function getAuctionPrivateKey(auctionAddress: string): string | null {
+  const state = loadAppState()
+  const auction = state.auctions.find(auction => 
+    auction.address.toLowerCase() === auctionAddress.toLowerCase()
+  )
+  return auction?.privateKey || null
+}
+
+/**
+ * Get all transactions from local storage for dropdown
+ */
+export interface TransactionRecord {
+  hash: string
+  type: 'bond' | 'auction' | 'bid'
+  description: string
+  timestamp: number
+  chainId: number
+}
+
+export function getAllTransactions(): TransactionRecord[] {
+  const state = loadAppState()
+  const transactions: TransactionRecord[] = []
+
+  // Add bond transactions
+  state.bonds.forEach(bond => {
+    if (bond.txHash) {
+      transactions.push({
+        hash: bond.txHash,
+        type: 'bond',
+        description: `Bond Token: ${bond.name} (${bond.symbol})`,
+        timestamp: bond.deployedAt,
+        chainId: bond.chainId
+      })
+    }
+  })
+
+  // Add auction transactions
+  state.auctions.forEach(auction => {
+    if (auction.txHash) {
+      transactions.push({
+        hash: auction.txHash,
+        type: 'auction',
+        description: `Auction: ${auction.bondTokenName}`,
+        timestamp: auction.deployedAt,
+        chainId: auction.chainId
+      })
+    }
+  })
+
+  // Add bid transactions
+  state.bids.forEach(bid => {
+    transactions.push({
+      hash: bid.transactionHash,
+      type: 'bid',
+      description: `Bid: $${bid.price} × ${bid.quantity} bonds`,
+      timestamp: bid.submittedAt,
+      chainId: bid.chainId
+    })
+  })
+
+  // Sort by timestamp, most recent first
+  return transactions.sort((a, b) => b.timestamp - a.timestamp)
 }

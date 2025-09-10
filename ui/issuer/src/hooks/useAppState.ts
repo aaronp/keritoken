@@ -7,6 +7,7 @@ import {
   type AppState,
   type BondTokenData,
   type AuctionData,
+  type BidData,
   type WalletState,
   type BondFormState,
   type AuctionFormState,
@@ -14,9 +15,16 @@ import {
   saveAppState,
   addBondToken,
   addAuction,
+  addBid,
   getMostRecentBond,
   getBondsForChain,
   getAuctionsForChain,
+  getBidsForAuction,
+  getBidsByBidder,
+  getBidByTransactionHash,
+  getBidsForChain,
+  updateAuctionPrivateKey,
+  getAuctionPrivateKey,
   updateWalletState,
   updatePreferences,
   searchBonds,
@@ -130,11 +138,75 @@ export function useAuctions(chainId?: number) {
     return newAuction
   }, [refreshAuctions])
 
+  const updatePrivateKey = useCallback((auctionAddress: string, privateKey: string) => {
+    const success = updateAuctionPrivateKey(auctionAddress, privateKey)
+    if (success) {
+      refreshAuctions()
+    }
+    return success
+  }, [refreshAuctions])
+
+  const getPrivateKey = useCallback((auctionAddress: string) => {
+    return getAuctionPrivateKey(auctionAddress)
+  }, [])
+
   return {
     auctions,
     isLoading,
     refreshAuctions,
-    addAuction: addAuctionContract
+    addAuction: addAuctionContract,
+    updatePrivateKey,
+    getPrivateKey
+  }
+}
+
+/**
+ * Hook for managing bids
+ */
+export function useBids(chainId?: number) {
+  const [bids, setBids] = useState<BidData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const refreshBids = useCallback(() => {
+    setIsLoading(true)
+    try {
+      const allBids = chainId ? getBidsForChain(chainId) : loadAppState().bids
+      setBids(allBids)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [chainId])
+
+  useEffect(() => {
+    refreshBids()
+  }, [refreshBids])
+
+  const addBidRecord = useCallback((bidData: Omit<BidData, 'id' | 'submittedAt'>) => {
+    const newBid = addBid(bidData)
+    refreshBids()
+    return newBid
+  }, [refreshBids])
+
+  const getBidsForAuctionAddress = useCallback((auctionAddress: string) => {
+    return getBidsForAuction(auctionAddress)
+  }, [])
+
+  const getBidsByBidderAddress = useCallback((bidderAddress: string) => {
+    return getBidsByBidder(bidderAddress)
+  }, [])
+
+  const getBidByTxHash = useCallback((transactionHash: string) => {
+    return getBidByTransactionHash(transactionHash)
+  }, [])
+
+  return {
+    bids,
+    isLoading,
+    refreshBids,
+    addBid: addBidRecord,
+    getBidsForAuction: getBidsForAuctionAddress,
+    getBidsByBidder: getBidsByBidderAddress,
+    getBidByTransactionHash: getBidByTxHash
   }
 }
 

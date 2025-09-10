@@ -6,7 +6,9 @@ import { AuctionCreationForm } from '@/components/AuctionCreationForm'
 import { AuctionBidSelector } from '@/components/AuctionBidSelector'
 import { WalletConnect } from '@/components/WalletConnect'
 import { StorageDebug } from '@/components/StorageDebug'
-import { ExternalLink, Search } from 'lucide-react'
+import { BidHistory } from '@/components/BidHistory'
+import { Explorer } from '@/components/Explorer'
+import { Search } from 'lucide-react'
 import './App.css'
 
 function App() {
@@ -26,12 +28,15 @@ function App() {
             <div className="flex justify-center">
               <Button
                 variant="outline"
-                onClick={() => window.open('/explorer', '_blank')}
+                onClick={() => {
+                  // Get the explorer tab trigger element and click it
+                  const explorerTab = document.querySelector('[data-state][value="explorer"]') as HTMLElement;
+                  explorerTab?.click();
+                }}
                 className="flex items-center space-x-2"
               >
                 <Search className="h-4 w-4" />
                 <span>Block Explorer</span>
-                <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
           </div>
@@ -83,53 +88,11 @@ function App() {
               </TabsContent>
               
               <TabsContent value="explorer" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Search className="h-5 w-5" />
-                      <span>Block Explorer</span>
-                    </CardTitle>
-                    <CardDescription>
-                      Search and explore transactions on your local blockchain
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-muted-foreground">
-                      The block explorer is available as a dedicated page for better performance and user experience.
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={() => window.open('/explorer', '_blank')}
-                        className="flex items-center space-x-2"
-                      >
-                        <Search className="h-4 w-4" />
-                        <span>Open Block Explorer</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => window.location.href = '/explorer'}
-                        className="flex items-center space-x-2"
-                      >
-                        <Search className="h-4 w-4" />
-                        <span>Go to Explorer</span>
-                      </Button>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p><strong>Features:</strong></p>
-                      <ul className="list-disc list-inside space-y-1 ml-4">
-                        <li>Search transactions by hash</li>
-                        <li>View transaction details and status</li>
-                        <li>Explore event logs and contract interactions</li>
-                        <li>Gas usage and fee information</li>
-                        <li>Block and timestamp details</li>
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
+                <Explorer />
               </TabsContent>
               
               <TabsContent value="storage" className="space-y-4">
+                <BidHistory />
                 <Card>
                   <CardHeader>
                     <CardTitle>App Storage</CardTitle>
