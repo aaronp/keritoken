@@ -6,7 +6,7 @@ on:
     paths:
       - 'ui/issuer/**'
       - 'docs/**'
-      - '.github/workflows/deploy-ui-no-typecheck.yml'
+      - '.github/workflows/*.yml'
   workflow_dispatch:
 
 permissions:
