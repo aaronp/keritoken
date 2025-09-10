@@ -4,9 +4,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ExternalLink, Search, AlertCircle } from 'lucide-react'
+import { ExternalLink, Search, AlertCircle, Coins, Gavel, Lock } from 'lucide-react'
 import { ethers } from 'ethers'
-import { getBlockExplorerUrl } from '@/lib/contracts'
+import { getBlockExplorerUrl, BOND_TOKEN_ABI, BOND_AUCTION_ABI, MOCK_USDC_ABI } from '@/lib/contracts'
+import { useBondTokens, useAuctions } from '@/hooks/useAppState'
+import { loadAppState } from '@/lib/storage'
 
 interface TransactionResult {
   tx: ethers.TransactionResponse
@@ -20,12 +22,329 @@ interface LogEntry {
   data: string
 }
 
+interface DecodedEvent {
+  name: string
+  signature: string
+  args: Record<string, any>
+  contractType: 'BondToken' | 'BondAuction' | 'USDC' | 'Unknown'
+  icon: React.ComponentType<any>
+  description: string
+  color: string
+  contractInfo?: {
+    name?: string
+    symbol?: string
+    bondTokenName?: string
+  }
+}
+
+interface ContractInfo {
+  address: string
+  type: 'BondToken' | 'BondAuction' | 'USDC'
+  name?: string
+  symbol?: string
+  bondTokenName?: string
+  abi: any[]
+}
+
 export function Explorer() {
   const [txHash, setTxHash] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<TransactionResult | null>(null)
   const [provider, setProvider] = useState<ethers.JsonRpcProvider | null>(null)
+
+  // Load local storage data for contract identification
+  const { bonds } = useBondTokens() // Get all bonds across all chains
+  const { auctions } = useAuctions() // Get all auctions across all chains
+
+  // Contract interfaces for event decoding
+  const bondTokenInterface = new ethers.Interface(BOND_TOKEN_ABI)
+  const bondAuctionInterface = new ethers.Interface(BOND_AUCTION_ABI)  
+  const mockUSDCInterface = new ethers.Interface(MOCK_USDC_ABI)
+
+  // Function to identify contracts from local storage
+  const identifyContract = (address: string): ContractInfo | null => {
+    // Normalize address for comparison
+    const normalizedAddress = address.toLowerCase()
+    
+    // Check if it's a known bond token
+    const bondToken = bonds.find(bond => bond.address.toLowerCase() === normalizedAddress)
+    if (bondToken) {
+      return {
+        address,
+        type: 'BondToken',
+        name: bondToken.name,
+        symbol: bondToken.symbol,
+        abi: BOND_TOKEN_ABI
+      }
+    }
+
+    // Check if it's a known auction contract
+    const auction = auctions.find(auction => auction.address.toLowerCase() === normalizedAddress)
+    if (auction) {
+      return {
+        address,
+        type: 'BondAuction',
+        bondTokenName: auction.bondTokenName,
+        abi: BOND_AUCTION_ABI
+      }
+    }
+
+    // Check if it's a payment token (USDC) from auction data
+    const paymentToken = auctions.find(auction => auction.paymentTokenAddress.toLowerCase() === normalizedAddress)
+    if (paymentToken) {
+      return {
+        address,
+        type: 'USDC',
+        name: 'Mock USDC',
+        symbol: 'USDC',
+        abi: MOCK_USDC_ABI
+      }
+    }
+
+    return null
+  }
+
+  // Function to decode event logs
+  const decodeEventLog = (log: ethers.Log): DecodedEvent | null => {
+    // First, try to identify the contract from local storage
+    const contractInfo = identifyContract(log.address)
+    
+    if (contractInfo) {
+      // Use the specific ABI for this known contract
+      try {
+        const contractInterface = new ethers.Interface(contractInfo.abi)
+        const decodedLog = contractInterface.parseLog(log)
+        if (decodedLog) {
+          return {
+            name: decodedLog.name,
+            signature: decodedLog.signature,
+            args: decodedLog.args.toObject(),
+            contractType: contractInfo.type,
+            contractInfo: {
+              name: contractInfo.name,
+              symbol: contractInfo.symbol,
+              bondTokenName: contractInfo.bondTokenName
+            },
+            ...getEventMetadata(decodedLog.name, contractInfo.type)
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to decode event for known contract ${contractInfo.type}:`, error)
+      }
+    }
+
+    // Fallback to trying all interfaces if contract not identified
+    const interfaces = [
+      { interface: bondTokenInterface, type: 'BondToken' as const },
+      { interface: bondAuctionInterface, type: 'BondAuction' as const },
+      { interface: mockUSDCInterface, type: 'USDC' as const }
+    ]
+
+    for (const { interface: contractInterface, type } of interfaces) {
+      try {
+        const decodedLog = contractInterface.parseLog(log)
+        if (decodedLog) {
+          return {
+            name: decodedLog.name,
+            signature: decodedLog.signature,
+            args: decodedLog.args.toObject(),
+            contractType: type,
+            ...getEventMetadata(decodedLog.name, type)
+          }
+        }
+      } catch (error) {
+        // Log parsing failed, continue to next interface
+        continue
+      }
+    }
+
+    return null
+  }
+
+  // Get event metadata for better display
+  const getEventMetadata = (eventName: string, contractType: string) => {
+    const eventMetadata: Record<string, { icon: React.ComponentType<any>, description: string, color: string }> = {
+      'Transfer': { 
+        icon: Coins, 
+        description: 'Token transfer between addresses',
+        color: 'bg-blue-100 text-blue-800 border-blue-200'
+      },
+      'BidCommitted': { 
+        icon: Lock, 
+        description: 'Encrypted bid submitted to auction',
+        color: 'bg-green-100 text-green-800 border-green-200'
+      },
+      'BidRevealed': { 
+        icon: Search, 
+        description: 'Bid details revealed during reveal phase',
+        color: 'bg-purple-100 text-purple-800 border-purple-200'
+      },
+      'AuctionFinalized': { 
+        icon: Gavel, 
+        description: 'Auction completed with clearing price set',
+        color: 'bg-orange-100 text-orange-800 border-orange-200'
+      },
+      'TokensClaimed': { 
+        icon: Coins, 
+        description: 'Auction winner claimed their tokens',
+        color: 'bg-emerald-100 text-emerald-800 border-emerald-200'
+      },
+      'RoleGranted': { 
+        icon: Lock, 
+        description: 'Access control role granted',
+        color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
+      },
+      'Approval': { 
+        icon: Lock, 
+        description: 'Token approval granted',
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      },
+      'OwnershipTransferred': { 
+        icon: Lock, 
+        description: 'Contract ownership transferred',
+        color: 'bg-red-100 text-red-800 border-red-200'
+      }
+    }
+
+    return eventMetadata[eventName] || { 
+      icon: AlertCircle, 
+      description: 'Unknown event type',
+      color: 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }
+
+  // Format event arguments for display
+  const formatEventArg = (key: string, value: any, eventName: string): React.ReactNode => {
+    try {
+      // Handle different value types
+      if (typeof value === 'bigint') {
+        // Check if it looks like a wei amount (common in our contracts)
+        if (key.toLowerCase().includes('price') || key.toLowerCase().includes('value') || key.toLowerCase().includes('amount')) {
+          if (key.toLowerCase().includes('price') && eventName === 'BidRevealed') {
+            // Prices in auction are in USDC units (6 decimals)
+            return `$${ethers.formatUnits(value, 6)}`
+          } else if (key.toLowerCase().includes('quantity') && eventName === 'BidRevealed') {
+            // Quantities are in ether units (18 decimals)
+            return `${ethers.formatEther(value)} bonds`
+          } else if (key.toLowerCase().includes('price')) {
+            // Generic price formatting
+            return `$${ethers.formatUnits(value, 6)}`
+          } else {
+            // Default to ether formatting for amounts
+            return `${ethers.formatEther(value)} tokens`
+          }
+        } else {
+          // Just show the number for other BigInt values
+          return value.toString()
+        }
+      } else if (typeof value === 'string' && value.startsWith('0x')) {
+        // Special handling for important fields that shouldn't be truncated
+        const isImportantField = key.toLowerCase().includes('encryptedbid') || 
+                                key.toLowerCase().includes('encrypted') ||
+                                key.toLowerCase().includes('data')
+        
+        // Handle addresses and hashes
+        if (value.length === 42) {
+          // Ethereum address
+          return (
+            <div className="space-y-1">
+              <span className="bg-muted px-2 py-1 rounded font-mono text-xs">
+                {value.slice(0, 6)}...{value.slice(-4)}
+              </span>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                  Show full address
+                </summary>
+                <div className="mt-1 p-2 bg-gray-100 rounded font-mono text-xs break-all">
+                  {value}
+                </div>
+              </details>
+            </div>
+          )
+        } else if (value.length === 66) {
+          // Hash (like commitment)
+          return (
+            <div className="space-y-1">
+              <span className="bg-muted px-2 py-1 rounded font-mono text-xs">
+                {value.slice(0, 10)}...{value.slice(-6)}
+              </span>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                  Show full hash
+                </summary>
+                <div className="mt-1 p-2 bg-gray-100 rounded font-mono text-xs break-all">
+                  {value}
+                </div>
+              </details>
+            </div>
+          )
+        } else if (isImportantField) {
+          // Don't truncate important fields like encrypted bid data
+          const previewLength = 30
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="bg-muted px-2 py-1 rounded font-mono text-xs">
+                  {value.length > previewLength ? `${value.slice(0, previewLength)}...` : value}
+                </span>
+                <Badge variant="outline" className="text-xs">
+                  {value.length} chars
+                </Badge>
+              </div>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                  Show full encrypted data
+                </summary>
+                <div className="mt-2 p-3 bg-gray-100 rounded border">
+                  <div className="font-mono text-xs break-all leading-relaxed">
+                    {value}
+                  </div>
+                  <div className="mt-2 flex items-center space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs h-6"
+                      onClick={() => navigator.clipboard.writeText(value)}
+                    >
+                      Copy
+                    </Button>
+                    <span className="text-xs text-gray-600">
+                      Length: {value.length} characters
+                    </span>
+                  </div>
+                </div>
+              </details>
+            </div>
+          )
+        } else {
+          // Other hex data - show with expandable option
+          return (
+            <div className="space-y-1">
+              <span className="bg-muted px-2 py-1 rounded font-mono text-xs">
+                {value.length > 20 ? `${value.slice(0, 20)}...` : value}
+              </span>
+              {value.length > 20 && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                    Show full data
+                  </summary>
+                  <div className="mt-1 p-2 bg-gray-100 rounded font-mono text-xs break-all">
+                    {value}
+                  </div>
+                </details>
+              )}
+            </div>
+          )
+        }
+      } else {
+        // Default string representation
+        return String(value)
+      }
+    } catch (error) {
+      return String(value)
+    }
+  }
 
   // Initialize provider on component mount
   useEffect(() => {
@@ -103,7 +422,7 @@ export function Explorer() {
 
   const formatProperty = (name: string, value: React.ReactNode) => (
     <div className="grid grid-cols-[200px_1fr] gap-4 py-3 border-b border-border last:border-b-0">
-      <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+      <div className="text-sm font-medium text-gray-600 uppercase tracking-wide">
         {name}
       </div>
       <div className="font-mono text-sm break-all">
@@ -184,7 +503,7 @@ export function Explorer() {
           <Card className="mb-8">
             <CardContent className="text-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent mx-auto mb-4" />
-              <p className="text-muted-foreground text-lg">🔄 Searching for transaction...</p>
+              <p className="text-gray-600 text-lg">🔄 Searching for transaction...</p>
             </CardContent>
           </Card>
         )}
@@ -192,6 +511,57 @@ export function Explorer() {
         {/* Transaction Results */}
         {result && (
           <div className="space-y-6">
+            {/* Contract Summary */}
+            {result.receipt && result.receipt.logs && result.receipt.logs.length > 0 && (() => {
+              const uniqueContracts = new Map<string, ContractInfo | null>()
+              result.receipt.logs.forEach(log => {
+                if (!uniqueContracts.has(log.address)) {
+                  uniqueContracts.set(log.address, identifyContract(log.address))
+                }
+              })
+              
+              const knownContracts = Array.from(uniqueContracts.entries()).filter(([_, info]) => info !== null)
+              
+              return knownContracts.length > 0 ? (
+                <Card className="border-green-200 bg-green-50">
+                  <CardHeader>
+                    <CardTitle className="text-green-800 flex items-center space-x-2">
+                      <Search className="h-5 w-5" />
+                      <span>Known Contracts in Transaction</span>
+                    </CardTitle>
+                    <CardDescription className="text-green-700">
+                      These contracts are recognized from your local deployment history
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {knownContracts.map(([address, info]) => (
+                        <div key={address} className="bg-white p-3 rounded border border-green-200">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Badge variant="outline" className="text-xs border-green-300 text-green-800">
+                              {info!.type}
+                            </Badge>
+                            {info!.name && (
+                              <span className="font-medium text-sm text-gray-900">
+                                {info!.symbol ? `${info!.name} (${info!.symbol})` : info!.name}
+                              </span>
+                            )}
+                            {info!.bondTokenName && (
+                              <span className="text-xs text-gray-600">
+                                for {info!.bondTokenName}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs font-mono bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                            {address.slice(0, 8)}...{address.slice(-6)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : null
+            })()}
             {/* Transaction Details */}
             <Card>
               <CardHeader>
@@ -253,24 +623,131 @@ export function Explorer() {
               <Card>
                 <CardHeader>
                   <CardTitle>📜 Event Logs ({result.receipt.logs.length})</CardTitle>
+                  <CardDescription>
+                    Decoded smart contract events from this transaction
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {result.receipt.logs.map((log, index) => (
-                    <Card key={index} className="bg-muted/50">
-                      <CardHeader>
-                        <CardTitle className="text-sm">Event {index + 1}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-0">
-                        {formatProperty('Address', <span className="bg-background px-2 py-1 rounded">{log.address}</span>)}
-                        {formatProperty('Topics', 
-                          <div className="bg-background p-3 rounded text-xs leading-relaxed">
-                            {log.topics.join('\n')}
-                          </div>
-                        )}
-                        {log.data && log.data !== '0x' && formatProperty('Data', <span className="bg-background px-2 py-1 rounded">{log.data}</span>)}
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {result.receipt.logs.map((log, index) => {
+                    const decodedEvent = decodeEventLog(log)
+                    
+                    if (decodedEvent) {
+                      const IconComponent = decodedEvent.icon
+                      return (
+                        <Card key={index} className="bg-muted/50 border">
+                          <CardHeader>
+                            <CardTitle className="flex items-center space-x-3 flex-wrap">
+                              <Badge className={decodedEvent.color}>
+                                <IconComponent className="h-3 w-3 mr-1" />
+                                {decodedEvent.name}
+                              </Badge>
+                              <div className="flex items-center space-x-2 text-sm font-normal text-gray-600">
+                                <span>{decodedEvent.contractType}</span>
+                                {decodedEvent.contractInfo && (
+                                  <>
+                                    {decodedEvent.contractInfo.name && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {decodedEvent.contractInfo.symbol ? 
+                                          `${decodedEvent.contractInfo.name} (${decodedEvent.contractInfo.symbol})` : 
+                                          decodedEvent.contractInfo.name
+                                        }
+                                      </Badge>
+                                    )}
+                                    {decodedEvent.contractInfo.bondTokenName && (
+                                      <Badge variant="outline" className="text-xs">
+                                        for {decodedEvent.contractInfo.bondTokenName}
+                                      </Badge>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </CardTitle>
+                            <CardDescription className="text-sm">
+                              {decodedEvent.description}
+                              {decodedEvent.contractInfo && (
+                                <span className="ml-2 text-green-600 font-medium">
+                                  • Known Contract
+                                </span>
+                              )}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-0">
+                            {formatProperty('Contract Address', <span className="bg-background px-2 py-1 rounded">{log.address}</span>)}
+                            
+                            {/* Decoded Event Arguments */}
+                            {Object.entries(decodedEvent.args).map(([key, value]) => (
+                              <div key={key}>
+                                {formatProperty(
+                                  key.charAt(0).toUpperCase() + key.slice(1), 
+                                  formatEventArg(key, value, decodedEvent.name)
+                                )}
+                              </div>
+                            ))}
+                            
+                            {/* Raw Data (Collapsible) */}
+                            <details className="mt-4">
+                              <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-900">
+                                View Raw Data
+                              </summary>
+                              <div className="mt-2 space-y-2 bg-background p-3 rounded border text-xs">
+                                <div>
+                                  <strong>Signature:</strong> {decodedEvent.signature}
+                                </div>
+                                <div>
+                                  <strong>Topics:</strong>
+                                  <div className="font-mono bg-muted p-2 rounded mt-1">
+                                    {log.topics.map((topic, i) => (
+                                      <div key={i}>{i}: {topic}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                                {log.data && log.data !== '0x' && (
+                                  <div>
+                                    <strong>Data:</strong>
+                                    <div className="font-mono bg-muted p-2 rounded mt-1 break-all">
+                                      {log.data}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </details>
+                          </CardContent>
+                        </Card>
+                      )
+                    } else {
+                      // Fallback for unknown events
+                      return (
+                        <Card key={index} className="bg-muted/50 border-dashed">
+                          <CardHeader>
+                            <CardTitle className="flex items-center space-x-2">
+                              <Badge variant="secondary">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Unknown Event #{index + 1}
+                              </Badge>
+                            </CardTitle>
+                            <CardDescription>
+                              Could not decode this event - may be from an unknown contract
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-0">
+                            {formatProperty('Contract Address', <span className="bg-background px-2 py-1 rounded">{log.address}</span>)}
+                            {formatProperty('Topics', 
+                              <div className="bg-background p-3 rounded text-xs leading-relaxed font-mono">
+                                {log.topics.map((topic, i) => (
+                                  <div key={i}>{i}: {topic}</div>
+                                ))}
+                              </div>
+                            )}
+                            {log.data && log.data !== '0x' && formatProperty('Data', 
+                              <div className="bg-background p-3 rounded text-xs font-mono break-all">
+                                {log.data}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )
+                    }
+                  })}
                 </CardContent>
               </Card>
             )}
