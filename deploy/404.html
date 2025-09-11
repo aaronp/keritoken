@@ -12,16 +12,24 @@
   <link rel="stylesheet" crossorigin href="/auctions/docs/assets/modules/shiki-Bxv373Z5.css">
   <link rel="stylesheet" crossorigin href="/auctions/docs/assets/index-aHxq2Ms4.css">
   <script>
-    // Handle redirected routes from 404.html
+    // GitHub Pages SPA fallback for Slidev docs
     (function() {
+      var path = window.location.pathname;
+      
+      // If this is a docs route, redirect to the docs app
+      if (path.startsWith('/auctions/docs/')) {
+        // Store the original path for the docs app to handle
+        sessionStorage.redirect = window.location.href;
+        // Redirect to the docs index which has the Vue app
+        window.location.replace('/auctions/docs/');
+        return;
+      }
+      
+      // Handle other routes normally
       var redirect = sessionStorage.redirect;
       delete sessionStorage.redirect;
       if (redirect && redirect !== location.href) {
-        // Extract the route from the redirect URL
-        var redirectUrl = new URL(redirect);
-        var targetPath = redirectUrl.pathname + redirectUrl.search + redirectUrl.hash;
-        // Use replaceState to set the correct route for Vue router
-        history.replaceState(null, null, targetPath);
+        history.replaceState(null, null, redirect);
       }
     })();
   </script>
