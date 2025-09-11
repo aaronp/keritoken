@@ -8,7 +8,6 @@ The application requires contract artifacts to function. Follow these steps:
 
 ### 1. Compile Contracts
 ```bash
-# From the root directory (/Users/aaron/dev/sandbox/auctions/)
 make test
 ```
 

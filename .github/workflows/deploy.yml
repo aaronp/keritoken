@@ -48,7 +48,7 @@ jobs:
 
       - name: Update repository name in build script
         run: |
-          sed -i "s/REPO_NAME=\"sandbox\"/REPO_NAME=\"${{ github.event.repository.name }}\"/" build-for-pages.sh
+          sed -i "s/REPO_NAME=\"auctions\"/REPO_NAME=\"${{ github.event.repository.name }}\"/" build-for-pages.sh
 
       - name: Build UI and docs
         run: ./build-for-pages.sh
