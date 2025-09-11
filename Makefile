@@ -31,7 +31,11 @@ help:
 	@echo "  lint           - Run solidity linter"
 	@echo "  format         - Format code"
 	@echo "  verify         - Verify contracts on block explorer"
-	@echo "  build-ui       - Build UI for GitHub Pages deployment"
+	@echo ""
+	@echo "UI Building:"
+	@echo "  build-ui-only  - Build UI application only"
+	@echo "  build-docs-only- Build documentation slides only"  
+	@echo "  build-ui       - Build complete UI package for GitHub Pages"
 	@echo ""
 	@echo "Environment Setup:"
 	@echo "  - Copy .env.example to .env and fill in your values"
@@ -228,10 +232,22 @@ gas-report: compile
 	@echo "✅ Gas report complete"
 
 # UI Build targets for GitHub Pages
+build-ui-only:
+	@echo "Building UI application only..."
+	chmod +x build-ui.sh
+	./build-ui.sh
+	@echo "✅ UI application build complete"
+
+build-docs-only:
+	@echo "Building documentation only..."
+	chmod +x build-docs.sh
+	./build-docs.sh
+	@echo "✅ Documentation build complete"
+
 build-ui:
-	@echo "Building UI for GitHub Pages deployment..."
+	@echo "Building complete UI package for GitHub Pages deployment..."
 	./build-for-pages.sh
-	@echo "✅ UI build complete - ready for GitHub Pages"
+	@echo "✅ Complete UI build ready for GitHub Pages"
 
 # All-in-one targets for common workflows
 all: install compile test deploy-local
