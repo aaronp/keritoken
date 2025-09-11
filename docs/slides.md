@@ -1,4 +1,3 @@
----
 # Bond Auction Platform
 ## Complete User Workflow
 
@@ -25,14 +24,15 @@ This Bond Auction application demonstrates:
 The webapp is available [here](https://aaronp.github.io/auctions), and the code is [here](https://github.com/aaronp/auctions)
 
 ---
-layout:default
+theme: seriph
 ---
-# Step 1: Connect A Wallet
-*Connecting a wallet*
+# Step 1: Setup
+*Setup*
 
-<div v-click="1">
+This documentation shows the workflow of creating a bond, auction, and bids against a 
+locally running [hardhat](https://hardhat.org/hardhat2/redirect?r=%2Fhardhat-runner%2Fdocs%2Fgetting-started#overview) instance.
 
-This documentation shows the workflow which connects to a locally running ETH network (via [hardhat](https://hardhat.org/hardhat2/redirect?r=%2Fhardhat-runner%2Fdocs%2Fgetting-started#overview))
+<div v-click="1" class="absolute" v-click-hide="2">
 
 If you've cloned this project, you can start the network using `make node` to start it on localhost:8545:
 
@@ -42,9 +42,9 @@ If you've cloned this project, you can start the network using `make node` to st
 
 </div>
 
-<div v-click="2">
+<div v-click="2" class="absolute">
 
-And then import one or more of those accounts into [Metamask](https://metamask.io/en-GB) in your browser:
+And then import one (or more) of the listed accounts into [Metamask](https://metamask.io/en-GB) in your browser:
 
 <div class="flex items-center justify-center">
   <img src="/0_metamask.png" class="w-45 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/0_metamask.png', '_blank')"/>
@@ -58,8 +58,9 @@ And then import one or more of those accounts into [Metamask](https://metamask.i
 ---
 
 # Step 2: Wallet Connected
+**Connecting**
 
-When opening [the app](https://aaronp.github.io/auctions), you should see your connected wallet at the top:
+When opening [the app (here)](https://aaronp.github.io/auctions), you should see the connected wallet at the top:
 
 <div class="flex items-center justify-center">
   <img src="/1_connected.png" class="w-75 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/1_connected.png', '_blank')"/>
@@ -69,11 +70,11 @@ When opening [the app](https://aaronp.github.io/auctions), you should see your c
 ---
 
 # Step 3: Create Bond Token
-*Defining bond parameters*
+*Deploy a Bond*
 
 <div class="grid grid-cols-2 gap-8 h-96 items-start">
   <div class="space-y-4">
-    <p>Configure your bond token with:</p>
+    <p>You can create a bond token by specyfing:</p>
     <ul class="space-y-2">
       <li><strong>Name & Symbol</strong>: Token identification</li>
       <li><strong>Supply & Face Value</strong>: Economic parameters</li>
@@ -93,14 +94,13 @@ When opening [the app](https://aaronp.github.io/auctions), you should see your c
 # Step 4: Sign Deployment
 *Blockchain transaction*
 
-You will be required to sign the transaction to submit it to the blockchain.
+A prompt should appear to sign the deployment of the contract.
 
-As we metamask in this example, Metamask will prompt you to sign the transaction:
 <div class="flex items-center justify-center h-66">
   <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/3_signDeploy.png', '_blank')"/>
 </div>
 
-Review gas fees and confirm to deploy your bond token contract.
+If you're connecting to testnet or mainnet, be sure to review the gas fees and confirm to deploy your bond token contract.
 
 ---
 
