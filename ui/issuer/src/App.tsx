@@ -7,9 +7,12 @@ import { WalletConnect } from '@/components/WalletConnect'
 import { StorageDebug } from '@/components/StorageDebug'
 import { BidHistory } from '@/components/BidHistory'
 import { Explorer } from '@/components/Explorer'
+import { useTheme } from '@/hooks/useTheme'
 import './App.css'
 
 function App() {
+  // Initialize theme on app start
+  useTheme()
 
   return (
     <div className="min-h-screen bg-background">

@@ -62,7 +62,7 @@ And then import one or more of those accounts into [Metamask](https://metamask.i
 When opening [the app](https://aaronp.github.io/auctions), you should see your connected wallet at the top:
 
 <div class="flex items-center justify-center">
-  <img src="/1_connected.png" class="w-75 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/1_connected.png', '_blank')"/>
+  <img src="/1_connected.png" class="w-75 object-contain rounded-lg shadow-lg"/>
 </div>
 
 
@@ -97,7 +97,7 @@ You will be required to sign the transaction to submit it to the blockchain.
 
 As we metamask in this example, Metamask will prompt you to sign the transaction:
 <div class="flex items-center justify-center h-66">
-  <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/3_signDeploy.png', '_blank')"/>
+  <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Review gas fees and confirm to deploy your bond token contract.
@@ -109,7 +109,7 @@ Review gas fees and confirm to deploy your bond token contract.
 Your bond token is now deployed! The contract address is saved locally and displayed with a success confirmation.
 
 <div class="flex items-center justify-center h-86">
-  <img src="/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/4_deployed.png', '_blank')"/>
+  <img src="/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 
@@ -132,7 +132,7 @@ Your bond token is now deployed! The contract address is saved locally and displ
   </div>
 
   <div class="flex items-center justify-center h-86">
-    <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/5_createAuction.png', '_blank')"/>
+    <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
   </div>
 </div>
 
@@ -152,7 +152,7 @@ Your bond token is now deployed! The contract address is saved locally and displ
   </div>
 
 <div class="flex items-center justify-center h-96">
-  <img src="/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/6_deployAuction.png', '_blank')"/>
+  <img src="/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 </div>
 
@@ -166,7 +166,7 @@ The auction is live! The contract is deployed and ready to accept encrypted bids
 
 
 <div class="flex items-center justify-center h-96">
-  <img src="/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/7_deployed.png', '_blank')"/>
+  <img src="/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 
@@ -179,7 +179,7 @@ The auction is live! The contract is deployed and ready to accept encrypted bids
 If you've connected to your local hardhat network with your metamask account, you should see the transaction output in the logs: 
 
 <div class="flex items-center justify-center h-96">
-  <img src="/8_checkLogs.png" class="w-126 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/8_checkLogs.png', '_blank')"/>
+  <img src="/8_checkLogs.png" class="w-126 object-contain rounded-lg shadow-lg"/>
 </div>
 
 Move on to the 'Bid on Auction' tab to bid on the bond
@@ -191,7 +191,7 @@ Move on to the 'Bid on Auction' tab to bid on the bond
 Browse available auctions and select one to bid on. View auction details including price ranges and deadlines.
 
 <div class="flex items-center justify-center">
-  <img src="/9_bidChoice.png" class="h-86 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/9_bidChoice.png', '_blank')"/>
+  <img src="/9_bidChoice.png" class="h-86 object-contain rounded-lg shadow-lg"/>
 </div>
 
 
@@ -214,7 +214,7 @@ Browse available auctions and select one to bid on. View auction details includi
 
 
   <div class="flex items-center justify-center h-96">
-    <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/10_submitBid.png', '_blank')"/>
+    <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
   </div>
 </div>
 
@@ -226,7 +226,7 @@ Browse available auctions and select one to bid on. View auction details includi
 *Transaction confirmed*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/11_bidSubmitted.png', '_blank')"/>
+  <img src="/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Success! Your encrypted bid is committed to the blockchain. The bid details are saved locally for the reveal phase.
@@ -237,7 +237,7 @@ Success! Your encrypted bid is committed to the blockchain. The bid details are 
 *Analyzing transactions*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/12_explorerViewsBid.png', '_blank')"/>
+  <img src="/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Use the built-in explorer to:
