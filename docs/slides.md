@@ -12,155 +12,213 @@ A step-by-step guide to creating bonds, auctions, and bidding
 
 ---
 
-# Workflow Overview
+# Overview
 
-The Bond Auction Platform enables:
+This Bond Auction application demonstrates:
 
-- **Bond Creation**: Deploy ERC-20 bond tokens with custom parameters
-- **Auction Setup**: Create encrypted sealed-bid auctions for bonds  
-- **Secure Bidding**: Submit encrypted bids during commit phase
-- **Transaction Exploration**: View and analyze all transactions
+- **Bond Creation**: A bond smart contract ([BondToken.sol](https://github.com/aaronp/auctions/blob/master/contracts/BondToken.sol))
+- **Auction Setup**: An auction smart contract ([BondAuction.sol](https://github.com/aaronp/auctions/blob/master/contracts/BondAuction.sol)) for the bond
+- **Secure Bidding**: Allow encrypted bids on the Bond which the issuer can observe
+- **A Transaction Exploration**: View and analyze all transactions (basic block explorer)
 
-<v-clicks>
 
-- ✅ **MetaMask Integration** - Seamless wallet connection
-- 🔐 **RSA Encryption** - Secure bid privacy until reveal
-- 📊 **Real-time Explorer** - Decode events and view bid details
-- 💾 **Local Storage** - Track your contracts and bids
-
-</v-clicks>
+The webapp is available [here](https://aaronp.github.io/auctions), and the code is [here](https://github.com/aaronp/auctions)
 
 ---
+layout:default
+---
+# Step 1: Connect A Wallet
+*Connecting a wallet*
 
-# Step 1: Connect Wallet
-*Setting up MetaMask*
+<div v-click="1">
 
-<div class="flex items-center justify-center h-96">
+This documentation shows the workflow which connects to a locally running ETH network (via [hardhat](https://hardhat.org/hardhat2/redirect?r=%2Fhardhat-runner%2Fdocs%2Fgetting-started#overview))
+
+If you've cloned this project, you can start the network using `make node` to start it on localhost:8545:
+
+<div class="flex items-center justify-center">
+  <img src="/localstart.png" class="w-96 object-contain rounded-lg shadow-lg"/>
+</div>
+
+</div>
+
+<div v-click="2">
+
+And then import one or more of those accounts into [Metamask](https://metamask.io/en-GB) in your browser:
+
+<div class="flex items-center justify-center">
   <img src="/0_metamask.png" class="w-45 object-contain rounded-lg shadow-lg"/>
 </div>
 
-Connect your MetaMask wallet to begin interacting with the platform. Make sure you have sufficient ETH for gas fees.
+</div>
+
+
+
 
 ---
 
 # Step 2: Wallet Connected
-*Ready to start*
 
-<div class="flex items-center justify-center h-96">
-  <img src="/1_connected.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+When opening [the app](https://aaronp.github.io/auctions), you should see your connected wallet at the top:
+
+<div class="flex items-center justify-center">
+  <img src="/1_connected.png" class="w-75 object-contain rounded-lg shadow-lg"/>
 </div>
 
-Once connected, you'll see your address and can access all platform features. The interface shows your current network and account.
 
 ---
 
 # Step 3: Create Bond Token
 *Defining bond parameters*
 
-<div class="flex items-center justify-center h-96">
-  <img src="/2_createBond.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
-</div>
+<div class="grid grid-cols-2 gap-8 h-96 items-start">
+  <div class="space-y-4">
+    <p>Configure your bond token with:</p>
+    <ul class="space-y-2">
+      <li><strong>Name & Symbol</strong>: Token identification</li>
+      <li><strong>Supply & Face Value</strong>: Economic parameters</li>
+      <li><strong>Coupon Rate</strong>: Interest rate</li>
+      <li><strong>Maturity</strong>: Duration in months</li>
+    </ul>
+<div class="mt-2">And then choose 'Deploy Bond Token'</div>    
+  </div>
 
-Configure your bond token with:
-- **Name & Symbol**: Token identification
-- **Supply & Face Value**: Economic parameters  
-- **Coupon Rate**: Interest rate
-- **Maturity**: Duration in months
+  <div>
+    <img src="/2_createBond.png" class="w-70 object-contain rounded-lg shadow-lg"/>
+  </div>
+</div>
 
 ---
 
 # Step 4: Sign Deployment
 *Blockchain transaction*
 
-<div class="flex items-center justify-center h-96">
+You will be required to sign the transaction to submit it to the blockchain.
+
+As we metamask in this example, Metamask will prompt you to sign the transaction:
+<div class="flex items-center justify-center h-66">
   <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
-MetaMask will prompt you to sign the deployment transaction. Review gas fees and confirm to deploy your bond token contract.
+Review gas fees and confirm to deploy your bond token contract.
 
 ---
 
 # Step 5: Bond Deployed
-*Contract successfully created*
 
-<div class="flex items-center justify-center h-96">
+Your bond token is now deployed! The contract address is saved locally and displayed with a success confirmation.
+
+<div class="flex items-center justify-center h-86">
   <img src="/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
-Your bond token is now deployed! The contract address is saved locally and displayed with a success confirmation.
 
 ---
 
 # Step 6: Create Auction
-*Setting up the auction*
 
-<div class="flex items-center justify-center h-96">
-  <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+
+<div class="grid grid-cols-2 gap-8 h-96 items-start">
+  <div class="space-y-4">
+    <p>Configure auction parameters:</p>
+    <v-clicks>
+        <ul class="space-y-2">
+          <li><strong>Bond Token</strong>: Select the deployed bond you wish to auction</li>
+          <li><strong>Price Range</strong>: Min/max bid prices</li>
+          <li><strong>Timeline</strong>: Commit, reveal, and claim phases</li>
+          <li><strong>RSA Keys</strong>: Generated for bid encryption</li>
+        </ul>
+    </v-clicks>
+  </div>
+
+  <div class="flex items-center justify-center h-86">
+    <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  </div>
 </div>
 
-Configure auction parameters:
-- **Bond Token**: Select your deployed bond
-- **Price Range**: Min/max bid prices
-- **Timeline**: Commit, reveal, and claim phases
-- **RSA Keys**: Generated for bid encryption
 
 ---
 
 # Step 7: Deploy Auction
-*Creating the auction contract*
+*Secret Bids*
+
+
+
+<div class="grid grid-cols-2 gap-8 h-96 items-start">
+  <div class="space-y-4">
+    <p>In this example, a separate key-pair is used for decrypting the participants' bids.</p>
+    <p>The key is saved in local storage, and so the issuer can view bid events as they come in.</p>
+    <v-clicks><p><span class="font-bold">Action:</span> Click 'Deploy Auction Contract' to deploy the contract and reveal the private key</p></v-clicks>
+  </div>
 
 <div class="flex items-center justify-center h-96">
   <img src="/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
+</div>
 
-Sign the transaction to deploy your auction contract. The private key for decrypting bids is securely stored locally.
 
 ---
 
 # Step 8: Auction Deployed  
 *Ready for bidding*
 
+The auction is live! The contract is deployed and ready to accept encrypted bids during the commit phase.
+
+
 <div class="flex items-center justify-center h-96">
   <img src="/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
-Auction is live! The contract is deployed and ready to accept encrypted bids during the commit phase.
+
 
 ---
 
 # Step 9: Check Logs
 *Transaction verification*
 
+If you've connected to your local hardhat network with your metamask account, you should see the transaction output in the logs: 
+
 <div class="flex items-center justify-center h-96">
-  <img src="/8_checkLogs.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/8_checkLogs.png" class="w-126 object-contain rounded-lg shadow-lg"/>
 </div>
 
-View transaction logs to confirm successful deployment. All contract addresses and transaction hashes are tracked.
+Move on to the 'Bid on Auction' tab to bid on the bond
 
 ---
 
 # Step 10: Choose Auction
-*Select auction to bid on*
-
-<div class="flex items-center justify-center h-96">
-  <img src="/9_bidChoice.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
-</div>
 
 Browse available auctions and select one to bid on. View auction details including price ranges and deadlines.
+
+<div class="flex items-center justify-center">
+  <img src="/9_bidChoice.png" class="h-86 object-contain rounded-lg shadow-lg"/>
+</div>
+
 
 ---
 
 # Step 11: Submit Bid
 *Encrypted bidding*
 
-<div class="flex items-center justify-center h-96">
-  <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+<div class="grid grid-cols-2 gap-8 h-96 items-start">
+  <div class="space-y-4">
+    <p>Feel free to switch Metamask accounts to bid as different participants</p>
+    <p>Enter in your bid details:</p>
+    <ul>
+      <li><strong>Price</strong> Your bid price per bond</li>
+      <li><strong>Quantity:</strong> Number of bonds to purchase</li>
+      <li><strong>Encryption:</strong> Bid is automatically encrypted with RSA</li>
+    </ul>
+    <v-clicks><p><span class="font-bold">Action:</span> Click 'Submit  Bid' to submit your bid</p></v-clicks>
+  </div>
+
+
+  <div class="flex items-center justify-center h-96">
+    <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  </div>
 </div>
 
-Enter your bid:
-- **Price**: Your bid price per bond
-- **Quantity**: Number of bonds to purchase
-- **Encryption**: Bid is automatically encrypted with RSA
+
 
 ---
 

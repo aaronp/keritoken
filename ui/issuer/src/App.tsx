@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
 import { BondCreationForm } from '@/components/BondCreationForm'
 import { AuctionCreationForm } from '@/components/AuctionCreationForm'
 import { AuctionBidSelector } from '@/components/AuctionBidSelector'
@@ -8,7 +7,6 @@ import { WalletConnect } from '@/components/WalletConnect'
 import { StorageDebug } from '@/components/StorageDebug'
 import { BidHistory } from '@/components/BidHistory'
 import { Explorer } from '@/components/Explorer'
-import { Search } from 'lucide-react'
 import './App.css'
 
 function App() {
