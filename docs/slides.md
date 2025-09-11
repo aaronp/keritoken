@@ -36,7 +36,7 @@ The Bond Auction Platform enables:
 *Setting up MetaMask*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/0_metamask.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/0_metamask.png" class="w-45 object-contain rounded-lg shadow-lg"/>
 </div>
 
 Connect your MetaMask wallet to begin interacting with the platform. Make sure you have sufficient ETH for gas fees.
