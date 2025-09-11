@@ -12,7 +12,7 @@ import { Search } from 'lucide-react'
 import './App.css'
 
 function App() {
-  
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -24,20 +24,6 @@ function App() {
               <p className="text-xl text-muted-foreground">
                 Create and manage bond auctions with encrypted bidding
               </p>
-            </div>
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // Get the explorer tab trigger element and click it
-                  const explorerTab = document.querySelector('[data-state][value="explorer"]') as HTMLElement;
-                  explorerTab?.click();
-                }}
-                className="flex items-center space-x-2"
-              >
-                <Search className="h-4 w-4" />
-                <span>Block Explorer</span>
-              </Button>
             </div>
           </div>
 
@@ -54,7 +40,7 @@ function App() {
                 <TabsTrigger value="explorer">Explorer</TabsTrigger>
                 <TabsTrigger value="storage">Storage</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="create-bond" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -68,7 +54,7 @@ function App() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="create-auction" className="space-y-4">
                 <Card>
                   <CardHeader>
@@ -82,15 +68,15 @@ function App() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="bid-auction" className="space-y-4">
                 <AuctionBidSelector />
               </TabsContent>
-              
+
               <TabsContent value="explorer" className="space-y-4">
                 <Explorer />
               </TabsContent>
-              
+
               <TabsContent value="storage" className="space-y-4">
                 <BidHistory />
                 <Card>
