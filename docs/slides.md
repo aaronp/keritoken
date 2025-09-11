@@ -37,22 +37,60 @@ locally running [hardhat](https://hardhat.org/hardhat2/redirect?r=%2Fhardhat-run
 If you've cloned this project, you can start the network using `make node` to start it on localhost:8545:
 
 <div class="flex items-center justify-center">
-  <img src="/localstart.png" class="w-96 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/localstart.png', '_blank')"/>
+  <img src="/localstart.png" class="w-96 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/localstart.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
+
+
 </div>
 
-<div v-click="2" class="absolute">
+<div v-click="2" class="absolute" v-click-hide="3">
 
-And then import one (or more) of the listed accounts into [Metamask](https://metamask.io/en-GB) in your browser:
+<div class="space-y-6">
+
+  ## Quick Start
+  ```bash
+  # Install dependencies
+  make install
+
+  # Start local blockchain
+  make node
+
+  # Deploy contracts  
+  make deploy-local
+
+  # Run frontend
+  make ui
+  ```
+
+  </div>
+</div>
+
+
+
+<div v-click="3" class="absolute" v-click-hide="4">
+
+<div class="space-y-6">
+
+  ## Testing
+  ```bash
+  # Run complete workflow test
+  make auction-test
+  ```
+
+  </div>
+</div>
+
+
+<div v-click="4" class="absolute">
+
+Open [Metamask](https://metamask.io/en-GB) in your browser to then import one (or more) of the listed accounts :
 
 <div class="flex items-center justify-center">
-  <img src="/0_metamask.png" class="w-45 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/0_metamask.png', '_blank')"/>
+  <img src="/0_metamask.png" class="w-45 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/0_metamask.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 </div>
-
-
 
 
 ---
@@ -63,18 +101,21 @@ And then import one (or more) of the listed accounts into [Metamask](https://met
 When opening [the app (here)](https://aaronp.github.io/auctions), you should see the connected wallet at the top:
 
 <div class="flex items-center justify-center">
-  <img src="/1_connected.png" class="w-75 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/1_connected.png', '_blank')"/>
+  <img src="/1_connected.png" class="w-75 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/1_connected.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
+This gives you a visual confirmation that the loaded account matches the expected account in Metamask.
+
+If you change accounts in Metamask, be sure to disconnect and reconnect in the app.
 
 ---
 
 # Step 3: Create Bond Token
-*Deploy a Bond*
+*Creating a Bond*
 
 <div class="grid grid-cols-2 gap-8 h-96 items-start">
   <div class="space-y-4">
-    <p>You can create a bond token by specyfing:</p>
+    <p>Fill in the form to create a new bond token:</p>
     <ul class="space-y-2">
       <li><strong>Name & Symbol</strong>: Token identification</li>
       <li><strong>Supply & Face Value</strong>: Economic parameters</li>
@@ -85,7 +126,7 @@ When opening [the app (here)](https://aaronp.github.io/auctions), you should see
   </div>
 
   <div>
-    <img src="/2_createBond.png" class="w-70 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/2_createBond.png', '_blank')"/>
+    <img src="/2_createBond.png" class="w-70 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/2_createBond.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
   </div>
 </div>
 
@@ -97,7 +138,7 @@ When opening [the app (here)](https://aaronp.github.io/auctions), you should see
 A prompt should appear to sign the deployment of the contract.
 
 <div class="flex items-center justify-center h-66">
-  <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/3_signDeploy.png', '_blank')"/>
+  <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/3_signDeploy.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 If you're connecting to testnet or mainnet, be sure to review the gas fees and confirm to deploy your bond token contract.
@@ -109,30 +150,29 @@ If you're connecting to testnet or mainnet, be sure to review the gas fees and c
 Your bond token is now deployed! The contract address is saved locally and displayed with a success confirmation.
 
 <div class="flex items-center justify-center h-86">
-  <img src="/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/4_deployed.png', '_blank')"/>
+  <img src="/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/4_deployed.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 
 ---
 
 # Step 6: Create Auction
-
+**Now let's deploy an auction contract**
 
 <div class="grid grid-cols-2 gap-8 h-96 items-start">
   <div class="space-y-4">
-    <p>Configure auction parameters:</p>
+    <p>Complete the auction parameters:</p>
     <v-clicks>
         <ul class="space-y-2">
           <li><strong>Bond Token</strong>: Select the deployed bond you wish to auction</li>
           <li><strong>Price Range</strong>: Min/max bid prices</li>
           <li><strong>Timeline</strong>: Commit, reveal, and claim phases</li>
-          <li><strong>RSA Keys</strong>: Generated for bid encryption</li>
         </ul>
     </v-clicks>
   </div>
 
   <div class="flex items-center justify-center h-86">
-    <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/5_createAuction.png', '_blank')"/>
+    <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/5_createAuction.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
   </div>
 </div>
 
@@ -146,13 +186,15 @@ Your bond token is now deployed! The contract address is saved locally and displ
 
 <div class="grid grid-cols-2 gap-8 h-96 items-start">
   <div class="space-y-4">
-    <p>In this example, a separate key-pair is used for decrypting the participants' bids.</p>
+    <p>There are many ways to allow the issuer to view submitted bids.</p>
+    <p>In this app, a new keypair is created when deploying the auction contract.</p>
+    <p>Entrant's bids are then encrypted using the public key.</p>
     <p>The key is saved in local storage, and so the issuer can view bid events as they come in.</p>
     <v-clicks><p><span class="font-bold">Action:</span> Click 'Deploy Auction Contract' to deploy the contract and reveal the private key</p></v-clicks>
   </div>
 
 <div class="flex items-center justify-center h-96">
-  <img src="/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/6_deployAuction.png', '_blank')"/>
+  <img src="/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/6_deployAuction.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 </div>
 
@@ -166,7 +208,7 @@ The auction is live! The contract is deployed and ready to accept encrypted bids
 
 
 <div class="flex items-center justify-center h-96">
-  <img src="/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/7_deployed.png', '_blank')"/>
+  <img src="/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/7_deployed.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 
@@ -179,7 +221,7 @@ The auction is live! The contract is deployed and ready to accept encrypted bids
 If you've connected to your local hardhat network with your metamask account, you should see the transaction output in the logs: 
 
 <div class="flex items-center justify-center h-96">
-  <img src="/8_checkLogs.png" class="w-126 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/8_checkLogs.png', '_blank')"/>
+  <img src="/8_checkLogs.png" class="w-126 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/8_checkLogs.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 Move on to the 'Bid on Auction' tab to bid on the bond
@@ -187,11 +229,12 @@ Move on to the 'Bid on Auction' tab to bid on the bond
 ---
 
 # Step 10: Choose Auction
+**Bidding**
 
 Browse available auctions and select one to bid on. View auction details including price ranges and deadlines.
 
 <div class="flex items-center justify-center">
-  <img src="/9_bidChoice.png" class="h-86 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/9_bidChoice.png', '_blank')"/>
+  <img src="/9_bidChoice.png" class="h-86 object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/9_bidChoice.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 
@@ -214,7 +257,7 @@ Browse available auctions and select one to bid on. View auction details includi
 
 
   <div class="flex items-center justify-center h-96">
-    <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/10_submitBid.png', '_blank')"/>
+    <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/10_submitBid.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
   </div>
 </div>
 
@@ -226,7 +269,7 @@ Browse available auctions and select one to bid on. View auction details includi
 *Transaction confirmed*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/11_bidSubmitted.png', '_blank')"/>
+  <img src="/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/11_bidSubmitted.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
 </div>
 
 Success! Your encrypted bid is committed to the blockchain. The bid details are saved locally for the reveal phase.
@@ -236,50 +279,22 @@ Success! Your encrypted bid is committed to the blockchain. The bid details are 
 # Step 13: Explorer View
 *Analyzing transactions*
 
-<div class="flex items-center justify-center h-96">
-  <img src="/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="window.open('/12_explorerViewsBid.png', '_blank')"/>
-</div>
-
+<div class="grid grid-cols-2 gap-8 h-96 items-start">
+<div>
 Use the built-in explorer to:
-- **Decode Events**: View human-readable event data
-- **Track Transactions**: Monitor all your activities  
-- **Reveal Bids**: Decrypt bids when you have the private key
-
----
-
-# Technical Features
-
-<div class="grid grid-cols-2 gap-8">
-
-<div>
-
-## Security
-- RSA-OAEP encryption for bids
-- Sealed-bid auction mechanism  
-- Commitment-reveal scheme
-- Local private key storage
-
+<v-clicks>
+<ul>
+  <li><strong>Decode Events</strong>: View human-readable event data</li>
+  <li><strong>Track Transactions</strong>: Monitor all your activities</li>
+  <li><strong>Reveal Bids</strong>: Decrypt bids when you have the private key</li>
+</ul>
+</v-clicks>
 </div>
-
-<div>
-
-## User Experience
-- React TypeScript frontend
-- Real-time transaction tracking
-- Automatic event decoding
-- Responsive design
-
+  <div class="space-y-4">
+    <div class="flex items-center justify-center h-96">
+      <img src="/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg cursor-pointer hover:scale-105 transition-transform" @click="(e) => { const link = e.target.ownerDocument.createElement('a'); link.href = '/auctions/docs/12_explorerViewsBid.png'; link.target = '_blank'; link.rel = 'noopener'; e.target.ownerDocument.body.appendChild(link); link.click(); e.target.ownerDocument.body.removeChild(link); }"/>
+    </div>
 </div>
-
-</div>
-
-<div class="pt-8">
-
-## Smart Contracts
-- **BondToken.sol**: ERC-20 compliant bonds
-- **BondAuction.sol**: Encrypted auction logic
-- **MockUSDC.sol**: Payment token for testing
-
 </div>
 
 ---
@@ -303,40 +318,6 @@ graph TB
     K --> L[Encrypted Bids]
     L --> M[Reveal Phase]
 ```
-
----
-
-# Getting Started
-
-<div class="space-y-6">
-
-## Prerequisites
-- Node.js 18+ and npm
-- MetaMask wallet
-- Local Ethereum node (Hardhat)
-
-## Quick Start
-```bash
-# Install dependencies
-make install
-
-# Start local blockchain
-make node
-
-# Deploy contracts  
-make deploy-local
-
-# Run frontend
-make ui
-```
-
-## Testing
-```bash
-# Run complete workflow test
-make auction-test
-```
-
-</div>
 
 ---
 

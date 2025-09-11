@@ -28,7 +28,9 @@
       "WebFetch(domain:github.com)",
       "mcp__ide__getDiagnostics",
       "Bash(sed:*)",
-      "Bash(./build-docs.sh:*)"
+      "Bash(./build-docs.sh:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }
