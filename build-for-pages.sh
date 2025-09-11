@@ -25,7 +25,7 @@ echo "✅ Prerequisites found"
 echo ""
 
 # Set repository name (change this to match your GitHub repository)
-REPO_NAME="sandbox"
+REPO_NAME="auctions"
 echo "📝 Using repository name: $REPO_NAME"
 echo "   (Update this in build-for-pages.sh if different)"
 echo ""

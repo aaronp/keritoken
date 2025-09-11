@@ -19,3 +19,5 @@ artifacts
 # Testing
 test-results/dist
 ui/issuer/dist
+deploy
+docs/dist

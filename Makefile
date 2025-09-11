@@ -31,6 +31,7 @@ help:
 	@echo "  lint           - Run solidity linter"
 	@echo "  format         - Format code"
 	@echo "  verify         - Verify contracts on block explorer"
+	@echo "  build-ui       - Build UI for GitHub Pages deployment"
 	@echo ""
 	@echo "Environment Setup:"
 	@echo "  - Copy .env.example to .env and fill in your values"
@@ -225,6 +226,12 @@ gas-report: compile
 	@echo "Generating gas usage report..."
 	REPORT_GAS=true npx hardhat test
 	@echo "✅ Gas report complete"
+
+# UI Build targets for GitHub Pages
+build-ui:
+	@echo "Building UI for GitHub Pages deployment..."
+	./build-for-pages.sh
+	@echo "✅ UI build complete - ready for GitHub Pages"
 
 # All-in-one targets for common workflows
 all: install compile test deploy-local

@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ExternalLink, Search, Clock, DollarSign } from 'lucide-react'
 import { useBids } from '@/hooks/useAppState'
-import { type BidData } from '@/lib/storage'
 
 export function BidHistory() {
   const { bids } = useBids()

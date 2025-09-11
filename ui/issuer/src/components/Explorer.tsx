@@ -9,7 +9,7 @@ import { ExternalLink, Search, AlertCircle, Coins, Gavel, Lock } from 'lucide-re
 import { ethers } from 'ethers'
 import { getBlockExplorerUrl, BOND_TOKEN_ABI, BOND_AUCTION_ABI, MOCK_USDC_ABI } from '@/lib/contracts'
 import { useBondTokens, useAuctions, useBids } from '@/hooks/useAppState'
-import { loadAppState, getAuctionPrivateKey, getAllTransactions, type TransactionRecord } from '@/lib/storage'
+import { getAuctionPrivateKey, getAllTransactions, type TransactionRecord } from '@/lib/storage'
 
 interface TransactionResult {
   tx: ethers.TransactionResponse
@@ -17,11 +17,6 @@ interface TransactionResult {
   block: ethers.Block | null
 }
 
-interface LogEntry {
-  address: string
-  topics: string[]
-  data: string
-}
 
 interface DecodedEvent {
   name: string
@@ -135,7 +130,7 @@ export function Explorer() {
               symbol: contractInfo.symbol,
               bondTokenName: contractInfo.bondTokenName
             },
-            ...getEventMetadata(decodedLog.name, contractInfo.type)
+            ...getEventMetadata(decodedLog.name)
           }
         }
       } catch (error) {
@@ -159,7 +154,7 @@ export function Explorer() {
             signature: decodedLog.signature,
             args: decodedLog.args.toObject(),
             contractType: type,
-            ...getEventMetadata(decodedLog.name, type)
+            ...getEventMetadata(decodedLog.name)
           }
         }
       } catch (error) {
@@ -172,7 +167,7 @@ export function Explorer() {
   }
 
   // Get event metadata for better display
-  const getEventMetadata = (eventName: string, contractType: string) => {
+  const getEventMetadata = (eventName: string) => {
     const eventMetadata: Record<string, { icon: React.ComponentType<any>, description: string, color: string }> = {
       'Transfer': {
         icon: Coins,

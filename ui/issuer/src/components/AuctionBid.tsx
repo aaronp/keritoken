@@ -4,8 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Lock, DollarSign, TrendingUp, Clock, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react'
+import { Lock, DollarSign, AlertTriangle, CheckCircle, ExternalLink } from 'lucide-react'
 import { ContractInteractor, getProviderAndSigner, getBlockExplorerUrl } from '@/lib/contracts'
 import { useBids } from '@/hooks/useAppState'
 import { ethers } from 'ethers'
@@ -18,7 +17,6 @@ interface BidFormData {
 
 interface AuctionBidProps {
   auctionAddress: string
-  bondTokenAddress: string
   bondTokenName?: string
   minPrice: string
   maxPrice: string
@@ -32,7 +30,6 @@ interface AuctionBidProps {
 
 export function AuctionBid({
   auctionAddress,
-  bondTokenAddress,
   bondTokenName = 'Bond Token',
   minPrice,
   maxPrice,
@@ -221,33 +218,22 @@ export function AuctionBid({
       console.log('Interface fragments:', contractInterface.fragments)
       console.log('Interface forEachFunction:', contractInterface.forEachFunction)
       
-      const interfaceFunctions = contractInterface.functions
-      console.log('interfaceFunctions:', interfaceFunctions)
-      console.log('interfaceFunctions type:', typeof interfaceFunctions)
-      
-      if (!interfaceFunctions) {
-        console.log('Functions property is undefined, trying alternative approaches...')
-        
-        // Try getting functions through fragments
-        if (contractInterface.fragments) {
-          const functionFragments = contractInterface.fragments.filter(f => f.type === 'function')
-          console.log('Function fragments:', functionFragments.map(f => f.name))
-        }
-        
-        // Try alternative methods to get functions
-        if (contractInterface.forEachFunction) {
-          const functionNames = []
-          contractInterface.forEachFunction((func, name) => {
-            functionNames.push(name)
-          })
-          console.log('Functions via forEachFunction:', functionNames)
-        }
-        
-        console.log('Proceeding despite interface.functions being undefined - will test if contract methods work directly')
-      } else {
-        // If functions property exists, show the function keys
-        console.log('Contract interface functions:', Object.keys(interfaceFunctions))
+      // Try getting functions through fragments
+      if (contractInterface.fragments) {
+        const functionFragments = contractInterface.fragments.filter((f: any) => f.type === 'function')
+        console.log('Function fragments:', functionFragments.map((f: any) => f.name || 'unnamed'))
       }
+      
+      // Try alternative methods to get functions
+      if (contractInterface.forEachFunction) {
+        const functionNames: string[] = []
+        contractInterface.forEachFunction((_func: any, index: number) => {
+          functionNames.push(`function_${index}`)
+        })
+        console.log('Functions via forEachFunction:', functionNames)
+      }
+      
+      console.log('Proceeding to test if contract methods work directly')
 
       // Test basic contract read call first to verify ABI and check auction state
       console.log('Testing contract connection and checking auction state...')
@@ -301,17 +287,21 @@ export function AuctionBid({
             throw new Error('You have already committed a bid for this auction. Each address can only bid once.')
           }
         } catch (bidCheckError) {
-          console.log('Could not check existing bid (might be expected):', bidCheckError.message)
+          const errorMessage = bidCheckError instanceof Error ? bidCheckError.message : 'Unknown error'
+          console.log('Could not check existing bid (might be expected):', errorMessage)
         }
         
       } catch (readError) {
         console.error('Contract read test failed:', readError)
-        console.error('Read error details:', {
-          message: readError.message,
-          code: readError.code,
-          data: readError.data
-        })
-        throw new Error(`Pre-flight validation failed: ${readError.message}`)
+        const errorMessage = readError instanceof Error ? readError.message : 'Unknown error'
+        if (readError instanceof Error && 'code' in readError && 'data' in readError) {
+          console.error('Read error details:', {
+            message: errorMessage,
+            code: (readError as any).code,
+            data: (readError as any).data
+          })
+        }
+        throw new Error(`Pre-flight validation failed: ${errorMessage}`)
       }
 
       // Generate commitment hash (now async)
@@ -345,8 +335,10 @@ export function AuctionBid({
       try {
         if (auctionContract.interface && auctionContract.interface.getFunction) {
           const commitBidFunction = auctionContract.interface.getFunction('commitBid')
-          console.log('commitBid function signature:', commitBidFunction.format())
-          console.log('commitBid function selector:', commitBidFunction.selector)
+          if (commitBidFunction) {
+            console.log('commitBid function signature:', commitBidFunction.format())
+            console.log('commitBid function selector:', commitBidFunction.selector)
+          }
         } else {
           console.log('getFunction method not available, will try direct contract call')
         }

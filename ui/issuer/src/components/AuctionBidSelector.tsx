@@ -129,7 +129,6 @@ export function AuctionBidSelector() {
         return (
           <AuctionBid
             auctionAddress={selectedAuction.address}
-            bondTokenAddress={selectedAuction.bondTokenAddress}
             bondTokenName={selectedAuction.bondTokenName}
             minPrice={selectedAuction.minPrice}
             maxPrice={selectedAuction.maxPrice}

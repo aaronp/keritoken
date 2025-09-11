@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Wallet, ChevronDown } from 'lucide-react'
+import { Wallet } from 'lucide-react'
 
 interface WalletInfo {
   address: string

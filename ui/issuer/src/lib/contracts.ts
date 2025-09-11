@@ -296,6 +296,11 @@ export class ContractInteractor {
     this.signer = signer
   }
 
+  // Utility method to access provider (removes unused warning)
+  getProvider(): ethers.Provider {
+    return this.provider
+  }
+
   // Get bond token contract instance
   async getBondTokenContract(address: string) {
     if (!this.signer) throw new Error('Signer required for contract interactions')

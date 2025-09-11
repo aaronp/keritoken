@@ -25,7 +25,8 @@
       "Bash(npm run dev:*)",
       "Bash(find:*)",
       "Bash(chmod:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": []
   }

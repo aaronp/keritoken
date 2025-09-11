@@ -313,7 +313,7 @@ export function exportAppState(): string {
  */
 export function importAppState(jsonData: string): boolean {
   try {
-    const parsed = safeJsonParse(jsonData, null)
+    const parsed = safeJsonParse(jsonData, null) as any
     if (!parsed) return false
     
     // Validate structure

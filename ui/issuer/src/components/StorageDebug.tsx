@@ -9,7 +9,7 @@ import { getStorageStats, clearAppState, getSavedBondFormState, getSavedAuctionF
 import { useState, useEffect } from 'react'
 
 export function StorageDebug() {
-  const { state, refreshState } = useAppState()
+  const { refreshState } = useAppState()
   const { bonds } = useBondTokens()
   const { auctions } = useAuctions()
   const [stats, setStats] = useState<ReturnType<typeof getStorageStats> | null>(null)
