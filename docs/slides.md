@@ -36,7 +36,7 @@ The Bond Auction Platform enables:
 *Setting up MetaMask*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/0_metamask.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/0_metamask.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Connect your MetaMask wallet to begin interacting with the platform. Make sure you have sufficient ETH for gas fees.
@@ -47,7 +47,7 @@ Connect your MetaMask wallet to begin interacting with the platform. Make sure y
 *Ready to start*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/1_connected.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/1_connected.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Once connected, you'll see your address and can access all platform features. The interface shows your current network and account.
@@ -58,7 +58,7 @@ Once connected, you'll see your address and can access all platform features. Th
 *Defining bond parameters*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/2_createBond.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/2_createBond.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Configure your bond token with:
@@ -73,7 +73,7 @@ Configure your bond token with:
 *Blockchain transaction*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/3_signDeploy.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 MetaMask will prompt you to sign the deployment transaction. Review gas fees and confirm to deploy your bond token contract.
@@ -84,7 +84,7 @@ MetaMask will prompt you to sign the deployment transaction. Review gas fees and
 *Contract successfully created*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/4_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Your bond token is now deployed! The contract address is saved locally and displayed with a success confirmation.
@@ -95,7 +95,7 @@ Your bond token is now deployed! The contract address is saved locally and displ
 *Setting up the auction*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/5_createAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Configure auction parameters:
@@ -110,7 +110,7 @@ Configure auction parameters:
 *Creating the auction contract*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/6_deployAuction.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Sign the transaction to deploy your auction contract. The private key for decrypting bids is securely stored locally.
@@ -121,7 +121,7 @@ Sign the transaction to deploy your auction contract. The private key for decryp
 *Ready for bidding*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/7_deployed.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Auction is live! The contract is deployed and ready to accept encrypted bids during the commit phase.
@@ -132,7 +132,7 @@ Auction is live! The contract is deployed and ready to accept encrypted bids dur
 *Transaction verification*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/8_checkLogs.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/8_checkLogs.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 View transaction logs to confirm successful deployment. All contract addresses and transaction hashes are tracked.
@@ -143,7 +143,7 @@ View transaction logs to confirm successful deployment. All contract addresses a
 *Select auction to bid on*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/9_bidChoice.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/9_bidChoice.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Browse available auctions and select one to bid on. View auction details including price ranges and deadlines.
@@ -154,7 +154,7 @@ Browse available auctions and select one to bid on. View auction details includi
 *Encrypted bidding*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/10_submitBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Enter your bid:
@@ -168,7 +168,7 @@ Enter your bid:
 *Transaction confirmed*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/11_bidSubmitted.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Success! Your encrypted bid is committed to the blockchain. The bid details are saved locally for the reveal phase.
@@ -179,7 +179,7 @@ Success! Your encrypted bid is committed to the blockchain. The bid details are 
 *Analyzing transactions*
 
 <div class="flex items-center justify-center h-96">
-  <img src="/public/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
+  <img src="/12_explorerViewsBid.png" class="max-h-full max-w-full object-contain rounded-lg shadow-lg"/>
 </div>
 
 Use the built-in explorer to:
