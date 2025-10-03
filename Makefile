@@ -64,22 +64,6 @@ test: compile
 	npm test || echo "⚠️  Some test failures expected - core functionality verified"
 	@echo "✅ Test execution complete"
 
-test-basic: compile
-	@echo "Running basic functionality tests..."
-	npx hardhat test test/BasicTest.test.js
-	@echo "✅ Basic tests passed"
-
-auction-test: compile
-	@echo "Running full UI workflow auction test with RSA encryption..."
-	@echo "This test covers the complete workflow: bond creation → auction deployment → encrypted bidding → finalization"
-	npx hardhat test test/BondAuctionFullWorkflow.test.js
-	@echo "✅ Full auction workflow test passed"
-
-test-verbose: compile
-	@echo "Running tests with verbose output..."
-	npx hardhat test --reporter spec
-	@echo "✅ Verbose test execution complete"
-
 coverage: compile
 	@echo "Generating test coverage report..."
 	npx hardhat coverage
