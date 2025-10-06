@@ -20,7 +20,7 @@
   --color-popover-foreground: 222.2 84% 4.9%;
   --color-card: 0 0% 100%;
   --color-card-foreground: 222.2 84% 4.9%;
-  
+
   --radius: 0.5rem;
 }
 
@@ -48,7 +48,6 @@ html.dark {
   }
 }
 
-/* Also support system preference as fallback */
 @media (prefers-color-scheme: dark) {
   html:not(.light):not(.dark) {
     @theme {
@@ -84,39 +83,5 @@ html.dark {
     color: hsl(var(--color-foreground));
     margin: 0;
     padding: 0;
-  }
-}
-
-@layer components {
-  /* Ensure select dropdown has proper background and z-index */
-  [data-radix-select-content] {
-    background-color: hsl(var(--color-popover)) !important;
-    z-index: 9999 !important;
-  }
-  
-  /* Ensure select items have proper background */
-  [data-radix-select-item] {
-    background-color: transparent;
-  }
-  
-  [data-radix-select-item]:hover,
-  [data-radix-select-item][data-highlighted] {
-    background-color: hsl(var(--color-accent)) !important;
-  }
-
-  /* Enhanced tab styling */
-  [data-state="active"] {
-    font-weight: 600;
-  }
-
-  /* Enhanced button focus states */
-  button:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-  }
-
-  /* Active button press effect */
-  button:active {
-    transform: translateY(0px);
   }
 }
