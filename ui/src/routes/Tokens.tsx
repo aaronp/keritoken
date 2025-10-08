@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '@/hooks/useWeb3';
 import { useToken } from '@/hooks/useToken';
-import { storage, DeployedToken, DeployedGovernanceToken } from '@/lib/storage';
+import { storage, type DeployedToken, type DeployedGovernanceToken } from '@/lib/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';

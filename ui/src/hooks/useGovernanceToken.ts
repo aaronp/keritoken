@@ -4,9 +4,7 @@ import GovernanceTokenArtifact from '../../public/contracts/GovernanceToken.json
 
 export interface WhitelistedAddress {
   walletAddress: string;
-  challenge: string;
-  hash: string;
-  signature: string;
+  referenceId: string;
   blockNumber: number;
 }
 
@@ -49,9 +47,7 @@ export function useGovernanceToken(
         .filter(event => !removedAddresses.has((event.args as any).walletAddress.toLowerCase()))
         .map(event => ({
           walletAddress: (event.args as any).walletAddress,
-          challenge: (event.args as any).challenge,
-          hash: (event.args as any).hash,
-          signature: (event.args as any).signature,
+          referenceId: (event.args as any).referenceId,
           blockNumber: event.blockNumber
         }));
 
@@ -81,14 +77,12 @@ export function useGovernanceToken(
 
   const addAddress = async (
     walletAddress: string,
-    challenge: string,
-    hash: string,
-    signature: string
+    referenceId: string
   ) => {
     if (!signer || !contractAddress) throw new Error('No signer or contract address');
 
     const contract = new ethers.Contract(contractAddress, GovernanceTokenArtifact.abi, signer);
-    const tx = await contract.addAddress(walletAddress, challenge, hash, signature);
+    const tx = await contract.addAddress(walletAddress, referenceId);
     await tx.wait();
 
     // Reload addresses after adding

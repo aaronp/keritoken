@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWeb3 } from '@/hooks/useWeb3';
 import { useGovernanceToken } from '@/hooks/useGovernanceToken';
-import { storage, DeployedGovernanceToken } from '@/lib/storage';
+import { storage, type DeployedGovernanceToken } from '@/lib/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -79,12 +79,10 @@ export function Governance() {
 
   const handleAddAddress = async (
     walletAddress: string,
-    challenge: string,
-    hash: string,
-    signature: string
+    referenceId: string
   ) => {
     try {
-      await addAddress(walletAddress, challenge, hash, signature);
+      await addAddress(walletAddress, referenceId);
       setIsAddModalOpen(false);
       alert('Address added successfully!');
     } catch (error) {

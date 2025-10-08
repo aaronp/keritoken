@@ -3,26 +3,22 @@ import { useState } from 'react';
 interface AddAddressModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (walletAddress: string, challenge: string, hash: string, signature: string) => Promise<void>;
+  onSubmit: (walletAddress: string, referenceId: string) => Promise<void>;
 }
 
 export function AddAddressModal({ isOpen, onClose, onSubmit }: AddAddressModalProps) {
   const [walletAddress, setWalletAddress] = useState('');
-  const [challenge, setChallenge] = useState('');
-  const [hash, setHash] = useState('');
-  const [signature, setSignature] = useState('');
+  const [referenceId, setReferenceId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit(walletAddress, challenge, hash, signature);
+      await onSubmit(walletAddress, referenceId);
       // Reset form
       setWalletAddress('');
-      setChallenge('');
-      setHash('');
-      setSignature('');
+      setReferenceId('');
       onClose();
     } catch (error) {
       console.error('Error adding address:', error);
@@ -65,47 +61,17 @@ export function AddAddressModal({ isOpen, onClose, onSubmit }: AddAddressModalPr
           </div>
 
           <div>
-            <label htmlFor="challenge" className="block text-sm font-medium mb-1">
-              Challenge String
+            <label htmlFor="referenceId" className="block text-sm font-medium mb-1">
+              Reference ID <span className="text-muted-foreground text-xs">(e.g. KYC ID, email, user identifier)</span>
             </label>
             <input
               type="text"
-              id="challenge"
-              value={challenge}
-              onChange={(e) => setChallenge(e.target.value)}
-              placeholder="Enter challenge string"
+              id="referenceId"
+              value={referenceId}
+              onChange={(e) => setReferenceId(e.target.value)}
+              placeholder="user@example.com or KYC-12345"
               required
               className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="hash" className="block text-sm font-medium mb-1">
-              Hash
-            </label>
-            <input
-              type="text"
-              id="hash"
-              value={hash}
-              onChange={(e) => setHash(e.target.value)}
-              placeholder="0x..."
-              required
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground font-mono text-sm"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="signature" className="block text-sm font-medium mb-1">
-              Signature
-            </label>
-            <textarea
-              id="signature"
-              value={signature}
-              onChange={(e) => setSignature(e.target.value)}
-              placeholder="0x..."
-              required
-              rows={3}
-              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground font-mono text-sm"
             />
           </div>
 
