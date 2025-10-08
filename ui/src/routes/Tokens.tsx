@@ -5,10 +5,26 @@ import { storage, type DeployedToken, type DeployedGovernanceToken } from '@/lib
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Coins } from 'lucide-react';
+import { Plus, Trash2, Coins, ExternalLink } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
+
+// Helper function to get block explorer URL based on chain ID
+function getBlockExplorerUrl(chainId: number, address: string): string | null {
+  const explorers: Record<number, string> = {
+    1: 'https://etherscan.io',
+    11155111: 'https://sepolia.etherscan.io', // Sepolia
+    5: 'https://goerli.etherscan.io', // Goerli
+    137: 'https://polygonscan.com', // Polygon
+    80001: 'https://mumbai.polygonscan.com', // Mumbai
+  };
+
+  const baseUrl = explorers[chainId];
+  return baseUrl ? `${baseUrl}/address/${address}` : null;
+}
 
 export function Tokens() {
   const { provider, signer, isConnected } = useWeb3();
+  const { theme } = useTheme();
   const [deployedTokens, setDeployedTokens] = useState<DeployedToken[]>([]);
   const [governanceTokens, setGovernanceTokens] = useState<DeployedGovernanceToken[]>([]);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
@@ -18,6 +34,8 @@ export function Tokens() {
   const [selectedGovernance, setSelectedGovernance] = useState<string>('');
   const [mintTo, setMintTo] = useState('');
   const [mintAmount, setMintAmount] = useState('');
+  const [tokenName, setTokenName] = useState('');
+  const [tokenSymbol, setTokenSymbol] = useState('');
 
   const {
     balances,
@@ -26,6 +44,14 @@ export function Tokens() {
     deployToken,
     mintTokens,
   } = useToken(provider, signer, selectedToken);
+
+  const getCardBackgroundClasses = () => {
+    if (theme === 'dark') {
+      return 'bg-slate-900';
+    } else {
+      return 'bg-sky-50';
+    }
+  };
 
   useEffect(() => {
     loadData();
@@ -50,6 +76,11 @@ export function Tokens() {
       return;
     }
 
+    if (!tokenName.trim() || !tokenSymbol.trim()) {
+      alert('Please enter token name and symbol');
+      return;
+    }
+
     setDeploying(true);
     try {
       const address = await deployToken(selectedGovernance);
@@ -57,8 +88,8 @@ export function Tokens() {
 
       const newToken: DeployedToken = {
         address,
-        name: `Token ${deployedTokens.length + 1}`,
-        symbol: 'TKN',
+        name: tokenName.trim(),
+        symbol: tokenSymbol.trim().toUpperCase(),
         governanceTokenAddress: selectedGovernance,
         network: network?.name || 'unknown',
         chainId: Number(network?.chainId) || 0,
@@ -69,6 +100,8 @@ export function Tokens() {
       await loadData();
       setSelectedToken(address);
       setIsDeployDialogOpen(false);
+      setTokenName('');
+      setTokenSymbol('');
       alert('Token deployed successfully!');
     } catch (error) {
       console.error('Error deploying:', error);
@@ -125,7 +158,7 @@ export function Tokens() {
         </div>
         <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={governanceTokens.length === 0}>
+            <Button className='cursor-pointer' variant="outline" disabled={governanceTokens.length === 0}>
               <Plus className="mr-2 h-4 w-4" />
               Deploy New
             </Button>
@@ -138,6 +171,26 @@ export function Tokens() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token Name</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded-lg"
+                  placeholder="e.g., My Token"
+                  value={tokenName}
+                  onChange={(e) => setTokenName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Token Symbol</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded-lg"
+                  placeholder="e.g., MTK"
+                  value={tokenSymbol}
+                  onChange={(e) => setTokenSymbol(e.target.value)}
+                />
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Governance Token</label>
                 <select
@@ -152,7 +205,7 @@ export function Tokens() {
                   ))}
                 </select>
               </div>
-              <Button onClick={handleDeploy} disabled={deploying} className="w-full">
+              <Button onClick={handleDeploy} disabled={deploying || !tokenName.trim() || !tokenSymbol.trim()} className="w-full">
                 {deploying ? 'Deploying...' : 'Deploy Contract'}
               </Button>
             </div>
@@ -172,7 +225,7 @@ export function Tokens() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Token List */}
-        <Card className="md:col-span-1 bg-panel">
+        <Card className={`md:col-span-1 ${getCardBackgroundClasses()}`}>
           <CardHeader>
             <CardTitle>Deployed Tokens</CardTitle>
             <CardDescription>Select a token to manage</CardDescription>
@@ -181,40 +234,53 @@ export function Tokens() {
             {deployedTokens.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tokens deployed yet</p>
             ) : (
-              deployedTokens.map((token) => (
-                <div
-                  key={token.address}
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedToken === token.address
-                      ? 'border-primary bg-accent'
-                      : 'hover:bg-accent'
-                  }`}
-                  onClick={() => setSelectedToken(token.address)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{token.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">
-                      {token.address.substring(0, 10)}...
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(token.address);
-                    }}
+              deployedTokens.map((token) => {
+                const explorerUrl = getBlockExplorerUrl(token.chainId, token.address);
+                return (
+                  <div
+                    key={token.address}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedToken === token.address
+                        ? 'border-primary bg-accent'
+                        : 'hover:bg-accent'
+                      }`}
+                    onClick={() => setSelectedToken(token.address)}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{token.name} ({token.symbol})</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">
+                        {token.address.substring(0, 10)}...
+                      </p>
+                      {explorerUrl && (
+                        <a
+                          href={explorerUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          View on Explorer <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(token.address);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>
 
         {/* Token Details */}
-        <Card className="md:col-span-2 bg-panel">
+        <Card className={`md:col-span-2 ${getCardBackgroundClasses()}`}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -279,7 +345,7 @@ export function Tokens() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-accent rounded-lg">
                   <span className="text-sm font-medium">Total Supply</span>
-                  <span className="text-lg font-bold">{totalSupply} TKN</span>
+                  <span className="text-lg font-bold">{totalSupply} {deployedTokens.find(t => t.address === selectedToken)?.symbol || 'TKN'}</span>
                 </div>
 
                 {loadingBalances ? (
@@ -301,7 +367,7 @@ export function Tokens() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold">{balance.balance} TKN</p>
+                          <p className="font-bold">{balance.balance} {deployedTokens.find(t => t.address === selectedToken)?.symbol || 'TKN'}</p>
                         </div>
                       </div>
                     ))}

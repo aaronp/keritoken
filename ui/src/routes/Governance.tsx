@@ -7,14 +7,32 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Trash2, Users } from 'lucide-react';
 import { AddAddressModal } from '@/components/AddAddressModal';
+import { ExternalLink } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
+
+// Helper function to get block explorer URL based on chain ID
+function getBlockExplorerUrl(chainId: number, address: string): string | null {
+  const explorers: Record<number, string> = {
+    1: 'https://etherscan.io',
+    11155111: 'https://sepolia.etherscan.io', // Sepolia
+    5: 'https://goerli.etherscan.io', // Goerli
+    137: 'https://polygonscan.com', // Polygon
+    80001: 'https://mumbai.polygonscan.com', // Mumbai
+  };
+
+  const baseUrl = explorers[chainId];
+  return baseUrl ? `${baseUrl}/address/${address}` : null;
+}
 
 export function Governance() {
   const { provider, signer, isConnected } = useWeb3();
+  const { theme } = useTheme();
   const [deployedTokens, setDeployedTokens] = useState<DeployedGovernanceToken[]>([]);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deploying, setDeploying] = useState(false);
+  const [contractName, setContractName] = useState('');
 
   const {
     whitelistedAddresses,
@@ -22,6 +40,14 @@ export function Governance() {
     deployGovernanceToken,
     addAddress
   } = useGovernanceToken(provider, signer, selectedToken);
+
+  const getCardBackgroundClasses = () => {
+    if (theme === 'dark') {
+      return 'bg-slate-900';
+    } else {
+      return 'bg-sky-50';
+    }
+  };
 
   useEffect(() => {
     loadDeployedTokens();
@@ -41,6 +67,11 @@ export function Governance() {
       return;
     }
 
+    if (!contractName.trim()) {
+      alert('Please enter a contract name');
+      return;
+    }
+
     setDeploying(true);
     try {
       const address = await deployGovernanceToken();
@@ -48,7 +79,7 @@ export function Governance() {
 
       const newToken: DeployedGovernanceToken = {
         address,
-        name: `Governance Token ${deployedTokens.length + 1}`,
+        name: contractName.trim(),
         network: network?.name || 'unknown',
         chainId: Number(network?.chainId) || 0,
         deployedAt: Date.now()
@@ -58,6 +89,7 @@ export function Governance() {
       await loadDeployedTokens();
       setSelectedToken(address);
       setIsDeployDialogOpen(false);
+      setContractName('');
       alert('Governance token deployed successfully!');
     } catch (error) {
       console.error('Error deploying:', error);
@@ -110,7 +142,7 @@ export function Governance() {
         </div>
         <Dialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className='cursor-pointer' variant="outline">
               <Plus className="mr-2 h-4 w-4" />
               Deploy New
             </Button>
@@ -123,10 +155,17 @@ export function Governance() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <p className="text-sm text-muted-foreground">
-                This will deploy a new governance token contract to the current network.
-              </p>
-              <Button onClick={handleDeploy} disabled={deploying} className="w-full">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Contract Name</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded-lg"
+                  placeholder="e.g., My Governance Token"
+                  value={contractName}
+                  onChange={(e) => setContractName(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleDeploy} disabled={deploying || !contractName.trim()} className="w-full">
                 {deploying ? 'Deploying...' : 'Deploy Contract'}
               </Button>
             </div>
@@ -136,7 +175,7 @@ export function Governance() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Token List */}
-        <Card className="md:col-span-1 bg-panel">
+        <Card className={`md:col-span-1 ${getCardBackgroundClasses()}`}>
           <CardHeader>
             <CardTitle>Deployed Tokens</CardTitle>
             <CardDescription>Select a token to manage</CardDescription>
@@ -145,40 +184,53 @@ export function Governance() {
             {deployedTokens.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tokens deployed yet</p>
             ) : (
-              deployedTokens.map((token) => (
-                <div
-                  key={token.address}
-                  className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
-                    selectedToken === token.address
+              deployedTokens.map((token) => {
+                const explorerUrl = getBlockExplorerUrl(token.chainId, token.address);
+                return (
+                  <div
+                    key={token.address}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedToken === token.address
                       ? 'border-primary bg-accent'
                       : 'hover:bg-accent'
-                  }`}
-                  onClick={() => setSelectedToken(token.address)}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{token.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">
-                      {token.address.substring(0, 10)}...
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(token.address);
-                    }}
+                      }`}
+                    onClick={() => setSelectedToken(token.address)}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{token.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">
+                        {token.address.substring(0, 10)}...
+                      </p>
+                      {explorerUrl && (
+                        <a
+                          href={explorerUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          View on Explorer <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(token.address);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>
 
         {/* Token Details */}
-        <Card className="md:col-span-2 bg-panel">
+        <Card className={`md:col-span-2 ${getCardBackgroundClasses()}`}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

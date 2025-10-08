@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, Coins, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from './theme-provider';
 import { Button } from '@/components/ui/button';
 
 export function Sidebar() {

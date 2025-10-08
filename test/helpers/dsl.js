@@ -3,9 +3,10 @@ const { ethers } = require("hardhat");
 /**
  * Deploy a GovernanceToken contract
  * @param {Signer} deployer - Optional deployer signer (defaults to first signer)
+ * @param {string} name - Optional contract name for logging/display purposes (not used on-chain)
  * @returns {Promise<Contract>} Deployed GovernanceToken contract
  */
-async function deployGovernance(deployer = null) {
+async function deployGovernance(deployer = null, name = null) {
   if (!deployer) {
     [deployer] = await ethers.getSigners();
   }
@@ -14,6 +15,10 @@ async function deployGovernance(deployer = null) {
   const governance = await GovernanceToken.deploy();
   await governance.waitForDeployment();
 
+  if (name) {
+    console.log(`Deployed GovernanceToken "${name}" at ${await governance.getAddress()}`);
+  }
+
   return governance;
 }
 
@@ -21,9 +26,11 @@ async function deployGovernance(deployer = null) {
  * Deploy a Token contract
  * @param {string|Contract} governanceAddress - GovernanceToken address or contract
  * @param {Signer} deployer - Optional deployer signer (defaults to first signer)
+ * @param {string} name - Optional token name for logging/display purposes (not used on-chain)
+ * @param {string} symbol - Optional token symbol for logging/display purposes (not used on-chain)
  * @returns {Promise<Contract>} Deployed Token contract
  */
-async function deployToken(governanceAddress, deployer = null) {
+async function deployToken(governanceAddress, deployer = null, name = null, symbol = null) {
   if (!deployer) {
     [deployer] = await ethers.getSigners();
   }
@@ -36,6 +43,12 @@ async function deployToken(governanceAddress, deployer = null) {
   const Token = await ethers.getContractFactory("Token", deployer);
   const token = await Token.deploy(govAddress);
   await token.waitForDeployment();
+
+  if (name || symbol) {
+    const displayName = name || 'Token';
+    const displaySymbol = symbol || 'TKN';
+    console.log(`Deployed Token "${displayName}" (${displaySymbol}) at ${await token.getAddress()}`);
+  }
 
   return token;
 }
