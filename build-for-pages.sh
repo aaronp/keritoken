@@ -3,11 +3,11 @@
 # Build script for GitHub Pages deployment (local testing)
 # Uses separate build scripts for UI and documentation
 
-echo "🏗️  Building Bond Auction Platform for GitHub Pages..."
+echo "🏗️  Building Keritoken Platform for GitHub Pages..."
 echo ""
 
 # Set repository name (change this to match your GitHub repository)
-REPO_NAME="auctions"
+REPO_NAME="keritoken"
 echo "📝 Using repository name: $REPO_NAME"
 echo "   (Update this in build-for-pages.sh if different)"
 echo ""
@@ -30,7 +30,7 @@ fi
 
 # Copy UI to deployment root
 echo "📋 Copying UI to deployment directory..."
-cp -r ui/issuer/dist/* deploy/
+cp -r ui/dist/* deploy/
 
 # Build Documentation using separate script
 echo "📚 Building documentation..."

@@ -31,7 +31,8 @@
       "Bash(./build-docs.sh:*)",
       "Bash(git checkout:*)",
       "Bash(git restore:*)",
-      "WebFetch(domain:aaronp.github.io)"
+      "WebFetch(domain:aaronp.github.io)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

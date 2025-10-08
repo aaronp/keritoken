@@ -4,8 +4,28 @@ const DB_NAME = 'GovernanceTokenDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'appState';
 
+export interface DeployedGovernanceToken {
+  address: string;
+  name: string;
+  network: string;
+  chainId: number;
+  deployedAt: number;
+}
+
+export interface DeployedToken {
+  address: string;
+  name: string;
+  symbol: string;
+  governanceTokenAddress: string;
+  network: string;
+  chainId: number;
+  deployedAt: number;
+}
+
 interface AppState {
   governanceTokenAddress?: string;
+  governanceTokens?: DeployedGovernanceToken[];
+  tokens?: DeployedToken[];
 }
 
 class Storage {
@@ -62,6 +82,40 @@ class Storage {
 
   async setGovernanceTokenAddress(address: string): Promise<void> {
     return this.set('governanceTokenAddress', address);
+  }
+
+  async getGovernanceTokens(): Promise<DeployedGovernanceToken[]> {
+    const tokens = await this.get<DeployedGovernanceToken[]>('governanceTokens');
+    return tokens || [];
+  }
+
+  async addGovernanceToken(token: DeployedGovernanceToken): Promise<void> {
+    const tokens = await this.getGovernanceTokens();
+    tokens.push(token);
+    return this.set('governanceTokens', tokens);
+  }
+
+  async removeGovernanceToken(address: string): Promise<void> {
+    const tokens = await this.getGovernanceTokens();
+    const filtered = tokens.filter(t => t.address.toLowerCase() !== address.toLowerCase());
+    return this.set('governanceTokens', filtered);
+  }
+
+  async getTokens(): Promise<DeployedToken[]> {
+    const tokens = await this.get<DeployedToken[]>('tokens');
+    return tokens || [];
+  }
+
+  async addToken(token: DeployedToken): Promise<void> {
+    const tokens = await this.getTokens();
+    tokens.push(token);
+    return this.set('tokens', tokens);
+  }
+
+  async removeToken(address: string): Promise<void> {
+    const tokens = await this.getTokens();
+    const filtered = tokens.filter(t => t.address.toLowerCase() !== address.toLowerCase());
+    return this.set('tokens', filtered);
   }
 }
 
