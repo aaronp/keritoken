@@ -263,7 +263,8 @@ export class TokenContract {
    */
   async transfer(from: Signer, to: string, amount: string | bigint): Promise<ethers.ContractTransactionReceipt> {
     const amountWei = typeof amount === 'string' ? ethers.parseEther(amount) : amount;
-    const tx = await this.contract.connect(from).transfer(to, amountWei);
+    const connectedContract = this.contract.connect(from) as any;
+    const tx = await connectedContract.transfer(to, amountWei);
     return await tx.wait();
   }
 
