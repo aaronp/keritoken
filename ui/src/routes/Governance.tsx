@@ -159,7 +159,7 @@ export function Governance() {
                 <label className="text-sm font-medium">Contract Name</label>
                 <input
                   type="text"
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   placeholder="e.g., My Governance Token"
                   value={contractName}
                   onChange={(e) => setContractName(e.target.value)}
@@ -242,7 +242,7 @@ export function Governance() {
                 </CardDescription>
               </div>
               {selectedToken && (
-                <Button onClick={() => setIsAddModalOpen(true)}>
+                <Button variant="outline" className='cursor-pointer' onClick={() => setIsAddModalOpen(true)}>
                   <Users className="mr-2 h-4 w-4" />
                   Add Address
                 </Button>

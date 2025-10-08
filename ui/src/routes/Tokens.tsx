@@ -175,7 +175,7 @@ export function Tokens() {
                 <label className="text-sm font-medium">Token Name</label>
                 <input
                   type="text"
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   placeholder="e.g., My Token"
                   value={tokenName}
                   onChange={(e) => setTokenName(e.target.value)}
@@ -185,7 +185,7 @@ export function Tokens() {
                 <label className="text-sm font-medium">Token Symbol</label>
                 <input
                   type="text"
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   placeholder="e.g., MTK"
                   value={tokenSymbol}
                   onChange={(e) => setTokenSymbol(e.target.value)}
@@ -194,7 +194,7 @@ export function Tokens() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Select Governance Token</label>
                 <select
-                  className="w-full p-2 border rounded-lg"
+                  className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                   value={selectedGovernance}
                   onChange={(e) => setSelectedGovernance(e.target.value)}
                 >
@@ -311,7 +311,7 @@ export function Tokens() {
                         <label className="text-sm font-medium">Recipient Address</label>
                         <input
                           type="text"
-                          className="w-full p-2 border rounded-lg font-mono text-sm"
+                          className="w-full p-2 border rounded-lg font-mono text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                           placeholder="0x..."
                           value={mintTo}
                           onChange={(e) => setMintTo(e.target.value)}
@@ -321,7 +321,7 @@ export function Tokens() {
                         <label className="text-sm font-medium">Amount</label>
                         <input
                           type="text"
-                          className="w-full p-2 border rounded-lg"
+                          className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
                           placeholder="100"
                           value={mintAmount}
                           onChange={(e) => setMintAmount(e.target.value)}
