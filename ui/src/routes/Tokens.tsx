@@ -173,7 +173,7 @@ export function Tokens() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Token List */}
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-1 bg-panel">
           <CardHeader>
             <CardTitle>Deployed Tokens</CardTitle>
             <CardDescription>Select a token to manage</CardDescription>
@@ -215,7 +215,7 @@ export function Tokens() {
         </Card>
 
         {/* Token Details */}
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-2 bg-panel">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
