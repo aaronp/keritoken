@@ -1,4 +1,4 @@
-import { ethers, BrowserProvider, Signer, Contract } from 'ethers';
+import { ethers, BrowserProvider, type Signer, Contract } from 'ethers';
 import GovernanceTokenArtifact from '../../public/contracts/GovernanceToken.json';
 import TokenArtifact from '../../public/contracts/Token.json';
 
@@ -216,8 +216,9 @@ export class GovernanceContract {
 
     const contract = await factory.deploy();
     await contract.waitForDeployment();
+    const address = await contract.getAddress();
 
-    return new GovernanceContract(contract, signer);
+    return new GovernanceContract(address, signer);
   }
 }
 
@@ -354,7 +355,8 @@ export class TokenContract {
 
     const contract = await factory.deploy(governanceAddress);
     await contract.waitForDeployment();
+    const address = await contract.getAddress();
 
-    return new TokenContract(contract, signer);
+    return new TokenContract(address, signer);
   }
 }

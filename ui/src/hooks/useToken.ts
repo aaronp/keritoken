@@ -42,15 +42,17 @@ export function useToken(
       const addressMap = new Map<string, TokenBalance>();
 
       for (const event of events) {
-        const to = (event.args as any).to;
-        if (to !== ethers.ZeroAddress) {
-          if (!addressMap.has(to)) {
-            const balance = await contract.balanceOf(to);
-            addressMap.set(to, {
-              address: to,
-              balance: ethers.formatEther(balance),
-              blockNumber: event.blockNumber
-            });
+        if ('args' in event) {
+          const to = event.args.to;
+          if (to !== ethers.ZeroAddress) {
+            if (!addressMap.has(to)) {
+              const balance = await contract.balanceOf(to);
+              addressMap.set(to, {
+                address: to,
+                balance: ethers.formatEther(balance),
+                blockNumber: event.blockNumber
+              });
+            }
           }
         }
       }

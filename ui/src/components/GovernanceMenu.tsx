@@ -42,20 +42,12 @@ export function GovernanceMenu({ whitelistedAddresses, loading, onAddAddress }: 
               </div>
               <div className="grid grid-cols-1 gap-2 text-sm">
                 <div>
-                  <span className="font-semibold">Challenge: </span>
-                  <span className="text-muted-foreground">{address.challenge}</span>
+                  <span className="font-semibold">Reference: </span>
+                  <span className="text-muted-foreground">{address.referenceId}</span>
                 </div>
                 <div>
-                  <span className="font-semibold">Hash: </span>
-                  <span className="font-mono text-xs break-all text-muted-foreground">
-                    {address.hash}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold">Signature: </span>
-                  <span className="font-mono text-xs break-all text-muted-foreground">
-                    {address.signature}
-                  </span>
+                  <span className="font-semibold">Block: </span>
+                  <span className="text-muted-foreground">{address.blockNumber}</span>
                 </div>
               </div>
             </div>

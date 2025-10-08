@@ -25,7 +25,6 @@ export function Tokens() {
     loading: loadingBalances,
     deployToken,
     mintTokens,
-    reloadData
   } = useToken(provider, signer, selectedToken);
 
   useEffect(() => {

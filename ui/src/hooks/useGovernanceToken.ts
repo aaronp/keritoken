@@ -39,15 +39,18 @@ export function useGovernanceToken(
 
       // Build a set of removed addresses
       const removedAddresses = new Set(
-        removedEvents.map(event => (event.args as any).walletAddress.toLowerCase())
+        removedEvents
+          .filter((event): event is ethers.EventLog => 'args' in event)
+          .map(event => event.args.walletAddress.toLowerCase())
       );
 
       // Filter out removed addresses and map to WhitelistedAddress
       const addresses = addedEvents
-        .filter(event => !removedAddresses.has((event.args as any).walletAddress.toLowerCase()))
+        .filter((event): event is ethers.EventLog => 'args' in event)
+        .filter(event => !removedAddresses.has(event.args.walletAddress.toLowerCase()))
         .map(event => ({
-          walletAddress: (event.args as any).walletAddress,
-          referenceId: (event.args as any).referenceId,
+          walletAddress: event.args.walletAddress,
+          referenceId: event.args.referenceId,
           blockNumber: event.blockNumber
         }));
 
