@@ -10,14 +10,12 @@ contract GovernanceToken is Ownable {
     // Events
     event AddressAdded(
         address indexed walletAddress,
-        string challenge,
-        bytes32 hash,
-        bytes signature
+        string referenceId
     );
 
     event AddressRemoved(
         address indexed walletAddress,
-        string reason
+        string referenceId
     );
 
     constructor() Ownable(msg.sender) {}
@@ -25,38 +23,34 @@ contract GovernanceToken is Ownable {
     /**
      * @dev Add an address to the whitelist
      * @param walletAddress The address to whitelist
-     * @param challenge The challenge string used for verification
-     * @param hash The hash of the verification data
-     * @param signature The signature proving ownership
+     * @param referenceId A reference string for auditing (e.g. KYC ID, user identifier)
      */
     function addAddress(
         address walletAddress,
-        string memory challenge,
-        bytes32 hash,
-        bytes memory signature
+        string memory referenceId
     ) external onlyOwner {
         require(walletAddress != address(0), "Cannot whitelist zero address");
         require(!whitelisted[walletAddress], "Address already whitelisted");
 
         whitelisted[walletAddress] = true;
 
-        emit AddressAdded(walletAddress, challenge, hash, signature);
+        emit AddressAdded(walletAddress, referenceId);
     }
 
     /**
      * @dev Remove an address from the whitelist
      * @param walletAddress The address to remove
-     * @param reason The reason for removal
+     * @param referenceId A reference string for auditing (e.g. reason for removal)
      */
     function removeAddress(
         address walletAddress,
-        string memory reason
+        string memory referenceId
     ) external onlyOwner {
         require(whitelisted[walletAddress], "Address not whitelisted");
 
         whitelisted[walletAddress] = false;
 
-        emit AddressRemoved(walletAddress, reason);
+        emit AddressRemoved(walletAddress, referenceId);
     }
 
     /**

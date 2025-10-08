@@ -1,7 +1,7 @@
 # Bond Auction System Makefile
 # Provides convenient targets for testing and deployment
 
-.PHONY: help install compile test test-basic auction-test test-verbose clean deploy-local deploy-sepolia deploy-base node coverage lint format verify
+.PHONY: help install compile test test-basic auction-test test-verbose clean deploy-local deploy-sepolia deploy-base node network-start network-stop test-integration coverage lint format verify
 
 # Default target
 help:
@@ -16,9 +16,15 @@ help:
 	@echo "Testing:"
 	@echo "  test           - Run all tests"
 	@echo "  test-basic     - Run basic functionality tests only"
+	@echo "  test-integration - Run integration tests with DSL"
 	@echo "  auction-test   - Run full UI workflow auction test with RSA encryption"
 	@echo "  test-verbose   - Run tests with detailed output"
 	@echo "  coverage       - Generate test coverage report"
+	@echo ""
+	@echo "Network Management:"
+	@echo "  network-start  - Start local Hardhat network in background"
+	@echo "  network-stop   - Stop local Hardhat network"
+	@echo "  node           - Start local Hardhat node (foreground)"
 	@echo ""
 	@echo "Deployment:"
 	@echo "  deploy         - Deploy to local hardhat network (default)"
@@ -63,6 +69,11 @@ test: compile
 	@echo "⚠️  Note: Some tests may fail due to incomplete integration - this is expected in Phase 1.1"
 	npm test || echo "⚠️  Some test failures expected - core functionality verified"
 	@echo "✅ Test execution complete"
+
+test-integration: compile
+	@echo "Running integration tests with DSL..."
+	npx hardhat test test/integration/*.test.js
+	@echo "✅ Integration tests complete"
 
 coverage: compile
 	@echo "Generating test coverage report..."
@@ -243,3 +254,37 @@ testnet: env-check compile test-basic deploy-sepolia
 # Clean and rebuild everything
 rebuild: clean compile test-basic
 	@echo "✅ Complete rebuild finished"
+# Network Management Targets
+network-start:
+	@echo "Starting local Hardhat network in background..."
+	@pkill -f "hardhat node" 2>/dev/null || true
+	@npx hardhat node > /tmp/hardhat-network.log 2>&1 & echo $$! > /tmp/hardhat-network.pid
+	@sleep 3
+	@if pgrep -F /tmp/hardhat-network.pid > /dev/null; then \
+		echo "✅ Hardhat network started (PID: $$(cat /tmp/hardhat-network.pid))"; \
+		echo "📋 Logs: tail -f /tmp/hardhat-network.log"; \
+	else \
+		echo "❌ Failed to start network"; \
+		cat /tmp/hardhat-network.log; \
+		exit 1; \
+	fi
+
+network-stop:
+	@echo "Stopping local Hardhat network..."
+	@if [ -f /tmp/hardhat-network.pid ]; then \
+		kill $$(cat /tmp/hardhat-network.pid) 2>/dev/null || true; \
+		rm /tmp/hardhat-network.pid; \
+		echo "✅ Network stopped"; \
+	else \
+		pkill -f "hardhat node" 2>/dev/null || true; \
+		echo "✅ Network stopped (no PID file found)"; \
+	fi
+
+# Run integration tests with network
+test-with-network: network-start
+	@echo "Running integration tests on local network..."
+	@sleep 2
+	@npx hardhat test test/integration/*.test.js --network localhost || (make network-stop && exit 1)
+	@make network-stop
+	@echo "✅ Integration tests complete"
+
