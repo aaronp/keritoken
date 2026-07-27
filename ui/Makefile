@@ -1,11 +1,11 @@
-# Bond Auction Issuer UI Makefile
+# Governance Token Issuer UI Makefile
 # Provides convenient targets for building and running the React application
 
 .PHONY: help install dev build preview clean test lint format check-deps serve
 
 # Default target
 help:
-	@echo "Bond Auction Issuer UI - Available Commands:"
+	@echo "Issuer UI - Available Commands:"
 	@echo ""
 	@echo "Development:"
 	@echo "  install      - Install npm dependencies"

@@ -5,7 +5,7 @@ import { storage, type DeployedGovernanceToken } from '@/lib/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Users } from 'lucide-react';
+import { Plus, Trash2, Users, Copy, Check } from 'lucide-react';
 import { AddAddressModal } from '@/components/AddAddressModal';
 import { ExternalLink } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
@@ -33,6 +33,7 @@ export function Governance() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [contractName, setContractName] = useState('');
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
   const {
     whitelistedAddresses,
@@ -123,6 +124,17 @@ export function Governance() {
     }
   };
 
+  const handleCopyAddress = async (address: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddress(address);
+      setTimeout(() => setCopiedAddress(null), 2000);
+    } catch (error) {
+      console.error('Failed to copy address:', error);
+    }
+  };
+
   if (!isConnected) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -189,7 +201,7 @@ export function Governance() {
                 return (
                   <div
                     key={token.address}
-                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedToken === token.address
+                    className={`group flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedToken === token.address
                       ? 'border-primary bg-accent'
                       : 'hover:bg-accent'
                       }`}
@@ -212,16 +224,31 @@ export function Governance() {
                         </a>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(token.address);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => handleCopyAddress(token.address, e)}
+                        title="Copy address"
+                      >
+                        {copiedAddress === token.address ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(token.address);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 );
               })
