@@ -12,6 +12,16 @@ export interface DeployedGovernanceToken {
   deployedAt: number;
 }
 
+export interface DeployedComplianceRegistry {
+  address: string;
+  name: string;
+  bridgeSigner: string;
+  policySAID: string;
+  network: string;
+  chainId: number;
+  deployedAt: number;
+}
+
 export interface DeployedToken {
   address: string;
   name: string;
@@ -111,6 +121,23 @@ class Storage {
     const tokens = await this.getTokens();
     const filtered = tokens.filter(t => t.address.toLowerCase() !== address.toLowerCase());
     return this.set('tokens', filtered);
+  }
+
+  async getComplianceRegistries(): Promise<DeployedComplianceRegistry[]> {
+    const registries = await this.get<DeployedComplianceRegistry[]>('complianceRegistries');
+    return registries || [];
+  }
+
+  async addComplianceRegistry(registry: DeployedComplianceRegistry): Promise<void> {
+    const registries = await this.getComplianceRegistries();
+    registries.push(registry);
+    return this.set('complianceRegistries', registries);
+  }
+
+  async removeComplianceRegistry(address: string): Promise<void> {
+    const registries = await this.getComplianceRegistries();
+    const filtered = registries.filter(r => r.address.toLowerCase() !== address.toLowerCase());
+    return this.set('complianceRegistries', filtered);
   }
 }
 
