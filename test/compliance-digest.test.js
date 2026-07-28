@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { computeDigest } = require("../ui/src/lib/compliance-digest");
 
 // Import the same logic we'll put in the UI utility.
 // We re-implement here to verify against the contract's behavior.
@@ -23,13 +24,15 @@ describe("Compliance Digest", function () {
     const decisionId = ethers.id("digest-test-001");
     const registryAddress = registry.target;
 
-    // Compute digest the same way the UI utility will
-    const digest = ethers.keccak256(
-      ethers.solidityPacked(
-        ["bytes32", "address", "uint64", "bytes32", "uint256", "address"],
-        [policySAID, other.address, expiry, decisionId, chainId, registryAddress]
-      )
-    );
+    // Compute digest using the shared UI utility
+    const { digest } = computeDigest({
+      policySAID,
+      wallet: other.address,
+      expiry,
+      decisionId,
+      chainId,
+      registry: registryAddress,
+    });
 
     // Sign using EIP-191 personal sign (ethers.signMessage does the prefixing)
     const sig = await bridgeWallet.signMessage(ethers.getBytes(digest));

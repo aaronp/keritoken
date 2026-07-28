@@ -1,4 +1,8 @@
-require("ts-node").register({ transpileOnly: true, compilerOptions: { module: "commonjs" } });
+require("ts-node").register({
+  transpileOnly: true,
+  compilerOptions: { module: "commonjs", esModuleInterop: true },
+  moduleTypes: { "ui/src/**/*.ts": "cjs" },
+});
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
