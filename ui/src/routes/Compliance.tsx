@@ -44,6 +44,8 @@ export function Compliance() {
   const [debugSignature, setDebugSignature] = useState('');
   const [debugResult, setDebugResult] = useState<{ v: number; r: string; s: string } | null>(null);
   const [copiedHash, setCopiedHash] = useState(false);
+  const [debugVerifying, setDebugVerifying] = useState(false);
+  const [debugVerifyResult, setDebugVerifyResult] = useState<string | null>(null);
 
   const {
     verificationEvents,
@@ -85,10 +87,17 @@ export function Compliance() {
 
   const handleGenerate = () => {
     if (!selectedRegistry || !contractPolicySAID || !chainId) return;
+    let expiry: bigint;
+    try {
+      expiry = BigInt(debugExpiry);
+    } catch {
+      alert('Expiry must be a valid integer (unix seconds)');
+      return;
+    }
     const fields: CompactRepFields = {
       policySAID: contractPolicySAID,
       wallet: debugWallet,
-      expiry: BigInt(debugExpiry),
+      expiry,
       decisionId: debugDecisionId,
       chainId: BigInt(chainId),
       registry: selectedRegistry,
@@ -97,6 +106,7 @@ export function Compliance() {
     setDebugDigest(computeDigest(fields));
     setDebugResult(null);
     setDebugSignature('');
+    setDebugVerifyResult(null);
   };
 
   const handleCopyHash = async () => {
@@ -118,8 +128,8 @@ export function Compliance() {
 
   const handleSubmitDebug = async () => {
     if (!debugFields || !debugResult || !signer || !selectedRegistry) return;
-    setVerifying(true);
-    setVerifyResult(null);
+    setDebugVerifying(true);
+    setDebugVerifyResult(null);
     try {
       await submitVerification(
         debugFields.policySAID,
@@ -132,7 +142,7 @@ export function Compliance() {
         debugResult.r,
         debugResult.s
       );
-      setVerifyResult('Verification submitted successfully!');
+      setDebugVerifyResult('Verification submitted successfully!');
       // Reset debug state for next round
       setDebugDecisionId(generateDecisionId());
       setDebugDigest(null);
@@ -140,9 +150,9 @@ export function Compliance() {
       setDebugResult(null);
       setDebugSignature('');
     } catch (error: any) {
-      setVerifyResult(`Verification failed: ${error?.reason || error?.message || 'Unknown error'}`);
+      setDebugVerifyResult(`Verification failed: ${error?.reason || error?.message || 'Unknown error'}`);
     } finally {
-      setVerifying(false);
+      setDebugVerifying(false);
     }
   };
 
@@ -618,18 +628,18 @@ export function Compliance() {
                         </details>
                         <Button
                           onClick={handleSubmitDebug}
-                          disabled={verifying}
+                          disabled={debugVerifying}
                           className="w-full cursor-pointer"
                         >
-                          {verifying ? 'Submitting...' : 'Submit to Contract'}
+                          {debugVerifying ? 'Submitting...' : 'Submit to Contract'}
                         </Button>
-                        {verifyResult && (
+                        {debugVerifyResult && (
                           <p className={`text-sm ${
-                            verifyResult.startsWith('Verification submitted')
+                            debugVerifyResult.startsWith('Verification submitted')
                               ? 'text-green-600 dark:text-green-400'
                               : 'text-red-600 dark:text-red-400'
                           }`}>
-                            {verifyResult}
+                            {debugVerifyResult}
                           </p>
                         )}
                       </div>
