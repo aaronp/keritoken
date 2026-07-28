@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { computeDigest, splitSignature } = require("../ui/src/lib/compliance-digest");
+const { computeDigest, splitSignature, generateDecisionId } = require("../ui/src/lib/compliance-digest");
 
 // Import the same logic we'll put in the UI utility.
 // We re-implement here to verify against the contract's behavior.
@@ -34,9 +34,9 @@ describe("Compliance Digest", function () {
       registry: registryAddress,
     });
 
-    // Sign using EIP-191 personal sign (ethers.signMessage does the prefixing)
+    // Sign using EIP-191 personal sign, then split via the utility
     const sig = await bridgeWallet.signMessage(ethers.getBytes(digest));
-    const { v, r, s } = ethers.Signature.from(sig);
+    const { v, r, s } = splitSignature(sig);
 
     // Submit to contract — if digest computation is wrong, this reverts
     await expect(
@@ -45,7 +45,7 @@ describe("Compliance Digest", function () {
   });
 
   it("Should split a signature into v, r, s correctly", function () {
-    // A known 65-byte signature with canonical s (first byte < 0x80 required by ethers v6)
+    // ethers v6 enforces canonical s (s < secp256k1.n/2, i.e. s[0] < 0x80)
     const fakeSig = "0x" + "ab".repeat(32) + "1c".repeat(32) + "1b";
     const { v, r, s } = splitSignature(fakeSig);
     expect(v).to.equal(27);
@@ -54,9 +54,17 @@ describe("Compliance Digest", function () {
   });
 
   it("Should normalize v=0 to v=27", function () {
-    // Signature with v=0 (raw recovery id); canonical s required by ethers v6
+    // Signature with v=0 (raw recovery id)
     const rawSig = "0x" + "ab".repeat(32) + "1c".repeat(32) + "00";
     const { v } = splitSignature(rawSig);
     expect(v).to.equal(27);
+  });
+
+  it("Should generate unique decision IDs", function () {
+    const id1 = generateDecisionId();
+    const id2 = generateDecisionId();
+    expect(id1).to.match(/^0x[0-9a-f]{64}$/);
+    expect(id2).to.match(/^0x[0-9a-f]{64}$/);
+    expect(id1).to.not.equal(id2);
   });
 });
