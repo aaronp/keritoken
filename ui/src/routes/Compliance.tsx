@@ -522,8 +522,20 @@ export function Compliance() {
                 </Button>
 
                 {/* Debug Output */}
-                {debugDigest && (
+                {debugDigest && debugFields && (
                   <div className="space-y-3 pt-2 border-t">
+                    {/* Field values used in digest computation */}
+                    <details className="text-xs" open>
+                      <summary className="cursor-pointer text-muted-foreground font-medium">Fields used in digest</summary>
+                      <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 font-mono p-2 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600">
+                        <span className="text-muted-foreground">policySAID:</span><span className="truncate" title={debugFields.policySAID}>{debugFields.policySAID}</span>
+                        <span className="text-muted-foreground">wallet:</span><span>{debugFields.wallet}</span>
+                        <span className="text-muted-foreground">expiry:</span><span>{String(debugFields.expiry)}</span>
+                        <span className="text-muted-foreground">decisionId:</span><span className="truncate" title={debugFields.decisionId}>{debugFields.decisionId}</span>
+                        <span className="text-muted-foreground">chainId:</span><span>{String(debugFields.chainId)}</span>
+                        <span className="text-muted-foreground">registry:</span><span>{debugFields.registry}</span>
+                      </div>
+                    </details>
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-muted-foreground">Inner Digest (keccak256 of packed fields)</label>
                       <p className="font-mono text-xs break-all p-2 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600">
