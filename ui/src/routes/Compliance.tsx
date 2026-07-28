@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Trash2, Copy, Check, ExternalLink, RefreshCw, ClipboardCopy } from 'lucide-react';
 import { computeDigest, splitSignature, generateDecisionId, type CompactRepFields } from '@/lib/compliance-digest';
+import { ethers } from 'ethers';
 import { useTheme } from '@/components/theme-provider';
 
 function getBlockExplorerUrl(chainId: number, address: string): string | null {
@@ -87,6 +88,10 @@ export function Compliance() {
 
   const handleGenerate = () => {
     if (!selectedRegistry || !contractPolicySAID || !chainId) return;
+    if (!ethers.isAddress(debugWallet)) {
+      alert('Wallet must be a valid Ethereum address');
+      return;
+    }
     let expiry: bigint;
     try {
       expiry = BigInt(debugExpiry);
@@ -111,9 +116,13 @@ export function Compliance() {
 
   const handleCopyHash = async () => {
     if (!debugDigest) return;
-    await navigator.clipboard.writeText(debugDigest.prefixedHash);
-    setCopiedHash(true);
-    setTimeout(() => setCopiedHash(false), 2000);
+    try {
+      await navigator.clipboard.writeText(debugDigest.prefixedHash);
+      setCopiedHash(true);
+      setTimeout(() => setCopiedHash(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy hash:', error);
+    }
   };
 
   const handlePasteSignature = () => {
@@ -524,7 +533,7 @@ export function Compliance() {
 
                 <Button
                   onClick={handleGenerate}
-                  disabled={!debugWallet || !debugExpiry || !debugDecisionId}
+                  disabled={!debugWallet || !debugExpiry || !debugDecisionId || !contractPolicySAID}
                   className="w-full cursor-pointer"
                   variant="outline"
                 >
