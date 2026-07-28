@@ -32,6 +32,20 @@ describe("ComplianceRegistry", function () {
       expect(await registry.policySAID()).to.equal(policySAID);
       expect(await registry.owner()).to.equal(owner.address);
     });
+
+    it("Should reject zero address as bridge signer", async function () {
+      const Factory = await ethers.getContractFactory("ComplianceRegistry");
+      await expect(
+        Factory.deploy(ethers.ZeroAddress, policySAID)
+      ).to.be.revertedWithCustomError(registry, "ZeroAddress");
+    });
+
+    it("Should reject zero bytes32 as policySAID", async function () {
+      const Factory = await ethers.getContractFactory("ComplianceRegistry");
+      await expect(
+        Factory.deploy(bridgeWallet.address, ethers.ZeroHash)
+      ).to.be.revertedWithCustomError(registry, "ZeroPolicySAID");
+    });
   });
 
   describe("Verify", function () {

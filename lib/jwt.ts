@@ -23,6 +23,11 @@ export function decodeJwt(jwt: string): JwtParts {
   return { header, payload, signingInput, signatureBytes };
 }
 
+// NOTE: This is NOT standard ES256K (ECDSA over SHA-256). This uses
+// keccak256 + EIP-191 personal-sign, which is only compatible with
+// ethers.js Wallet.signMessage(). Standard JOSE JWT libraries will
+// produce incompatible signatures. For production KERI interop, the
+// bridge service would accept standard JWTs and re-sign internally.
 export function verifyJwtSignature(
   signingInput: string,
   signatureBytes: Uint8Array,
@@ -38,7 +43,7 @@ export function verifyJwtSignature(
   }
 }
 
-const REQUIRED_CLAIMS = ["sub", "aud", "exp", "jti", "policySAID", "chainId"];
+const REQUIRED_CLAIMS = ["iss", "sub", "aud", "exp", "jti", "policySAID", "chainId"];
 
 export function validateClaims(payload: Record<string, unknown>): void {
   for (const claim of REQUIRED_CLAIMS) {

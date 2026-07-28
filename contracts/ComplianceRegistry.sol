@@ -29,11 +29,14 @@ contract ComplianceRegistry is Ownable {
     error DecisionIdUsed();
     error ZeroAddress();
 
+    error ZeroPolicySAID();
+
     constructor(
         address bridgeSigner_,
         bytes32 policySAID_
     ) Ownable(msg.sender) {
         if (bridgeSigner_ == address(0)) revert ZeroAddress();
+        if (policySAID_ == bytes32(0)) revert ZeroPolicySAID();
         bridgeSigner = bridgeSigner_;
         policySAID = policySAID_;
     }
@@ -56,6 +59,7 @@ contract ComplianceRegistry is Ownable {
         address recovered = ECDSA.recover(ethSignedHash, v, r, s);
 
         if (recovered != bridgeSigner) revert InvalidSigner();
+        if (wallet == address(0)) revert ZeroAddress();
         if (policySAID_ != policySAID) revert PolicyMismatch();
         if (registry != address(this)) revert RegistryMismatch();
         if (chainId_ != block.chainid) revert ChainIdMismatch();
