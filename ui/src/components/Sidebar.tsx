@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, Coins, Moon, Sun } from 'lucide-react';
+import { Shield, ShieldCheck, Coins, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTheme } from './theme-provider';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,11 @@ export function Sidebar() {
   const { theme, toggleTheme } = useTheme();
 
   const navItems = [
+    {
+      path: '/compliance',
+      label: 'Compliance',
+      icon: ShieldCheck,
+    },
     {
       path: '/governance',
       label: 'Governance',
