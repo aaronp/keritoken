@@ -1,3 +1,4 @@
+require("ts-node").register({ transpileOnly: true, compilerOptions: { module: "commonjs" } });
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
