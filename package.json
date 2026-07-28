@@ -1,7 +1,7 @@
 {
-  "name": "bond-auction",
+  "name": "keritoken",
   "version": "1.0.0",
-  "description": "On-chain bond auction with encrypted bidding",
+  "description": "JWT compliance bridge for ERC-20 tokens",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
