@@ -16,6 +16,8 @@ function getBlockExplorerUrl(chainId: number, address: string): string | null {
     1: 'https://etherscan.io',
     11155111: 'https://sepolia.etherscan.io', // Sepolia
     5: 'https://goerli.etherscan.io', // Goerli
+    8453: 'https://basescan.org', // Base
+    84532: 'https://sepolia.basescan.org', // Base Sepolia
     137: 'https://polygonscan.com', // Polygon
     80001: 'https://mumbai.polygonscan.com', // Mumbai
   };
