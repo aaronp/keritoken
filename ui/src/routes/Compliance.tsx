@@ -5,7 +5,8 @@ import { storage, type DeployedComplianceRegistry } from '@/lib/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Copy, Check, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Copy, Check, ExternalLink, RefreshCw, ClipboardCopy } from 'lucide-react';
+import { computeDigest, splitSignature, generateDecisionId, type CompactRepFields } from '@/lib/compliance-digest';
 import { useTheme } from '@/components/theme-provider';
 
 function getBlockExplorerUrl(chainId: number, address: string): string | null {
@@ -20,7 +21,7 @@ function getBlockExplorerUrl(chainId: number, address: string): string | null {
 }
 
 export function Compliance() {
-  const { provider, signer, isConnected, chainId, chainName } = useWeb3();
+  const { provider, signer, account, isConnected, chainId, chainName } = useWeb3();
   const { theme } = useTheme();
   const [deployedRegistries, setDeployedRegistries] = useState<DeployedComplianceRegistry[]>([]);
   const [selectedRegistry, setSelectedRegistry] = useState<string | null>(null);
@@ -33,6 +34,16 @@ export function Compliance() {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<string | null>(null);
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+
+  // Bridge Debug state
+  const [debugWallet, setDebugWallet] = useState('');
+  const [debugExpiry, setDebugExpiry] = useState('');
+  const [debugDecisionId, setDebugDecisionId] = useState('');
+  const [debugDigest, setDebugDigest] = useState<{ digest: string; prefixedHash: string } | null>(null);
+  const [debugFields, setDebugFields] = useState<CompactRepFields | null>(null);
+  const [debugSignature, setDebugSignature] = useState('');
+  const [debugResult, setDebugResult] = useState<{ v: number; r: string; s: string } | null>(null);
+  const [copiedHash, setCopiedHash] = useState(false);
 
   const {
     verificationEvents,
@@ -59,6 +70,81 @@ export function Compliance() {
       loadVerificationEvents();
     }
   }, [selectedRegistry, provider]);
+
+  // Initialize debug fields when registry or account changes
+  useEffect(() => {
+    if (account) setDebugWallet(account);
+    setDebugExpiry(String(Math.floor(Date.now() / 1000) + 3600));
+    setDebugDecisionId(generateDecisionId());
+    // Reset computed state
+    setDebugDigest(null);
+    setDebugFields(null);
+    setDebugResult(null);
+    setDebugSignature('');
+  }, [selectedRegistry, account]);
+
+  const handleGenerate = () => {
+    if (!selectedRegistry || !contractPolicySAID || !chainId) return;
+    const fields: CompactRepFields = {
+      policySAID: contractPolicySAID,
+      wallet: debugWallet,
+      expiry: BigInt(debugExpiry),
+      decisionId: debugDecisionId,
+      chainId: BigInt(chainId),
+      registry: selectedRegistry,
+    };
+    setDebugFields(fields);
+    setDebugDigest(computeDigest(fields));
+    setDebugResult(null);
+    setDebugSignature('');
+  };
+
+  const handleCopyHash = async () => {
+    if (!debugDigest) return;
+    await navigator.clipboard.writeText(debugDigest.prefixedHash);
+    setCopiedHash(true);
+    setTimeout(() => setCopiedHash(false), 2000);
+  };
+
+  const handlePasteSignature = () => {
+    if (!debugSignature.trim()) return;
+    try {
+      const result = splitSignature(debugSignature.trim());
+      setDebugResult(result);
+    } catch (e: any) {
+      alert(`Invalid signature: ${e.message}`);
+    }
+  };
+
+  const handleSubmitDebug = async () => {
+    if (!debugFields || !debugResult || !signer || !selectedRegistry) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      await submitVerification(
+        debugFields.policySAID,
+        debugFields.wallet,
+        Number(debugFields.expiry),
+        debugFields.decisionId,
+        Number(debugFields.chainId),
+        debugFields.registry,
+        debugResult.v,
+        debugResult.r,
+        debugResult.s
+      );
+      setVerifyResult('Verification submitted successfully!');
+      // Reset debug state for next round
+      setDebugDecisionId(generateDecisionId());
+      setDebugDigest(null);
+      setDebugFields(null);
+      setDebugResult(null);
+      setDebugSignature('');
+    } catch (error: any) {
+      setVerifyResult(`Verification failed: ${error?.reason || error?.message || 'Unknown error'}`);
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const loadDeployedRegistries = async () => {
     const registries = await storage.getComplianceRegistries();
@@ -341,6 +427,203 @@ export function Compliance() {
                   <span className="font-medium">Chain: </span>
                   <span>{chainName || selectedRegistryData.network} ({chainId || selectedRegistryData.chainId})</span>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bridge Debug */}
+          {selectedRegistryData && (
+            <Card className={getCardBackgroundClasses()}>
+              <CardHeader>
+                <CardTitle>Bridge Debug</CardTitle>
+                <CardDescription>
+                  Generate a signing request, sign externally with kerits, paste the signature back
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Input Fields */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Policy SAID (from registry)</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                      value={contractPolicySAID || ''}
+                      disabled
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Wallet (address to verify)</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                      value={debugWallet}
+                      onChange={(e) => setDebugWallet(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Expiry (unix seconds)</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                        value={debugExpiry}
+                        onChange={(e) => setDebugExpiry(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Chain ID (from MetaMask)</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                        value={chainId || ''}
+                        disabled
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Decision ID</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        className="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                        value={debugDecisionId}
+                        onChange={(e) => setDebugDecisionId(e.target.value)}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="cursor-pointer"
+                        onClick={() => setDebugDecisionId(generateDecisionId())}
+                        title="Regenerate"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Registry (selected)</label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                      value={selectedRegistry || ''}
+                      disabled
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!debugWallet || !debugExpiry || !debugDecisionId}
+                  className="w-full cursor-pointer"
+                  variant="outline"
+                >
+                  Generate Signing Request
+                </Button>
+
+                {/* Debug Output */}
+                {debugDigest && (
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Inner Digest (keccak256 of packed fields)</label>
+                      <p className="font-mono text-xs break-all p-2 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600">
+                        {debugDigest.digest}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">EIP-191 Prefixed Hash (copy this to kerits)</label>
+                      <div className="flex gap-2 items-start">
+                        <p className="flex-1 font-mono text-xs break-all p-2 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600">
+                          {debugDigest.prefixedHash}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer shrink-0"
+                          onClick={handleCopyHash}
+                        >
+                          {copiedHash ? <Check className="h-4 w-4 text-green-600" /> : <ClipboardCopy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Signature Paste */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Paste signature from kerits (65-byte hex)</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 font-mono text-xs"
+                          placeholder="0x..."
+                          value={debugSignature}
+                          onChange={(e) => setDebugSignature(e.target.value)}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="cursor-pointer"
+                          onClick={handlePasteSignature}
+                          disabled={!debugSignature.trim()}
+                        >
+                          Parse
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Parsed Signature + Submit */}
+                    {debugResult && (
+                      <div className="space-y-3 pt-2 border-t">
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <label className="font-medium text-muted-foreground">v</label>
+                            <p className="font-mono p-1 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600">{debugResult.v}</p>
+                          </div>
+                          <div>
+                            <label className="font-medium text-muted-foreground">r</label>
+                            <p className="font-mono p-1 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600 truncate" title={debugResult.r}>{debugResult.r}</p>
+                          </div>
+                          <div>
+                            <label className="font-medium text-muted-foreground">s</label>
+                            <p className="font-mono p-1 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600 truncate" title={debugResult.s}>{debugResult.s}</p>
+                          </div>
+                        </div>
+                        {/* Assembled signed representation JSON */}
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-muted-foreground font-medium">Signed Representation JSON</summary>
+                          <pre className="mt-1 p-2 bg-white dark:bg-slate-800 rounded border border-gray-300 dark:border-gray-600 overflow-x-auto font-mono">
+                            {JSON.stringify({
+                              policySAID: debugFields?.policySAID,
+                              wallet: debugFields?.wallet,
+                              expiry: Number(debugFields?.expiry),
+                              decisionId: debugFields?.decisionId,
+                              chainId: Number(debugFields?.chainId),
+                              registry: debugFields?.registry,
+                              v: debugResult.v,
+                              r: debugResult.r,
+                              s: debugResult.s,
+                            }, null, 2)}
+                          </pre>
+                        </details>
+                        <Button
+                          onClick={handleSubmitDebug}
+                          disabled={verifying}
+                          className="w-full cursor-pointer"
+                        >
+                          {verifying ? 'Submitting...' : 'Submit to Contract'}
+                        </Button>
+                        {verifyResult && (
+                          <p className={`text-sm ${
+                            verifyResult.startsWith('Verification submitted')
+                              ? 'text-green-600 dark:text-green-400'
+                              : 'text-red-600 dark:text-red-400'
+                          }`}>
+                            {verifyResult}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
