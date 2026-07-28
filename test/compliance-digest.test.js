@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { computeDigest } = require("../ui/src/lib/compliance-digest");
+const { computeDigest, splitSignature } = require("../ui/src/lib/compliance-digest");
 
 // Import the same logic we'll put in the UI utility.
 // We re-implement here to verify against the contract's behavior.
@@ -47,7 +47,7 @@ describe("Compliance Digest", function () {
   it("Should split a signature into v, r, s correctly", function () {
     // A known 65-byte signature with canonical s (first byte < 0x80 required by ethers v6)
     const fakeSig = "0x" + "ab".repeat(32) + "1c".repeat(32) + "1b";
-    const { v, r, s } = ethers.Signature.from(fakeSig);
+    const { v, r, s } = splitSignature(fakeSig);
     expect(v).to.equal(27);
     expect(r).to.equal("0x" + "ab".repeat(32));
     expect(s).to.equal("0x" + "1c".repeat(32));
@@ -56,7 +56,7 @@ describe("Compliance Digest", function () {
   it("Should normalize v=0 to v=27", function () {
     // Signature with v=0 (raw recovery id); canonical s required by ethers v6
     const rawSig = "0x" + "ab".repeat(32) + "1c".repeat(32) + "00";
-    const { v } = ethers.Signature.from(rawSig);
+    const { v } = splitSignature(rawSig);
     expect(v).to.equal(27);
   });
 });
