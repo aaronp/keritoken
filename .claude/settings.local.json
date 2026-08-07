@@ -34,7 +34,8 @@
       "WebFetch(domain:aaronp.github.io)",
       "Bash(cat:*)",
       "Bash(npm run compile:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "WebFetch(domain:registry.npmjs.org)"
     ],
     "deny": []
   }

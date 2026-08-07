@@ -4,7 +4,7 @@
 NETWORK ?= localhost
 
 .PHONY: help install compile clean test test-contract test-bridge test-integration \
-        deploy node dev build-ui coverage env-setup
+        deploy node dev build-ui coverage env-setup abi
 
 help:
 	@echo "KeriToken — JWT Compliance Bridge"
@@ -26,6 +26,10 @@ help:
 	@echo "Deployment (set NETWORK=localhost|baseSepolia|base):"
 	@echo "  make deploy                Deploy ComplianceRegistry"
 	@echo "  make deploy NETWORK=baseSepolia"
+	@echo ""
+	@echo "Build:"
+	@echo "  make abi                   Extract ABI JSON files to abi/"
+	@echo "  make abi ABI_DIR=path      Extract ABIs to custom directory"
 	@echo ""
 	@echo "UI:"
 	@echo "  make build-ui              Build UI for GitHub Pages"
@@ -66,6 +70,16 @@ dev:
 
 build-ui:
 	cd ui && npm run build
+
+ABI_DIR ?= abi
+
+abi: compile
+	@mkdir -p $(ABI_DIR)
+	@for contract in ComplianceRegistry GovernanceToken Token; do \
+		jq '.abi' artifacts/contracts/$$contract.sol/$$contract.json > $(ABI_DIR)/$$contract.abi.json && \
+		echo "  $(ABI_DIR)/$$contract.abi.json"; \
+	done
+	@echo "ABI files ready in $(ABI_DIR)/"
 
 env-setup:
 	@if [ ! -f .env ]; then \
