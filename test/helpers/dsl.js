@@ -26,8 +26,8 @@ async function deployGovernance(deployer = null, name = null) {
  * Deploy a Token contract
  * @param {string|Contract} governanceAddress - GovernanceToken address or contract
  * @param {Signer} deployer - Optional deployer signer (defaults to first signer)
- * @param {string} name - Optional token name for logging/display purposes (not used on-chain)
- * @param {string} symbol - Optional token symbol for logging/display purposes (not used on-chain)
+ * @param {string} name - Optional token name (defaults to "Token")
+ * @param {string} symbol - Optional token symbol (defaults to "TKN")
  * @returns {Promise<Contract>} Deployed Token contract
  */
 async function deployToken(governanceAddress, deployer = null, name = null, symbol = null) {
@@ -41,7 +41,9 @@ async function deployToken(governanceAddress, deployer = null, name = null, symb
     : await governanceAddress.getAddress();
 
   const Token = await ethers.getContractFactory("Token", deployer);
-  const token = await Token.deploy(govAddress);
+  const tokenName = name || "Token";
+  const tokenSymbol = symbol || "TKN";
+  const token = await Token.deploy(tokenName, tokenSymbol, govAddress);
   await token.waitForDeployment();
 
   if (name || symbol) {

@@ -8,7 +8,7 @@ import "./GovernanceToken.sol";
 contract Token is ERC20, Ownable {
     GovernanceToken public governanceToken;
 
-    constructor(address _governanceTokenAddress) ERC20("Token", "TKN") Ownable(msg.sender) {
+    constructor(string memory name, string memory symbol, address _governanceTokenAddress) ERC20(name, symbol) Ownable(msg.sender) {
         require(_governanceTokenAddress != address(0), "Invalid governance token address");
         governanceToken = GovernanceToken(_governanceTokenAddress);
     }

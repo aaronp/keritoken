@@ -9,9 +9,7 @@ describe("Token Tests", function () {
   let user2;
   let user3;
 
-  const challenge = "test-challenge";
-  const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-  const signature = ethers.toUtf8Bytes("test-signature");
+  const referenceId = "test-reference";
 
   beforeEach(async function () {
     [owner, user1, user2, user3] = await ethers.getSigners();
@@ -23,7 +21,7 @@ describe("Token Tests", function () {
 
     // Deploy Token with GovernanceToken address
     const Token = await ethers.getContractFactory("Token");
-    token = await Token.deploy(await governanceToken.getAddress());
+    token = await Token.deploy("Token", "TKN", await governanceToken.getAddress());
     await token.waitForDeployment();
   });
 
@@ -47,7 +45,7 @@ describe("Token Tests", function () {
 
     it("Should not deploy with zero address governance token", async function () {
       const Token = await ethers.getContractFactory("Token");
-      await expect(Token.deploy(ethers.ZeroAddress)).to.be.revertedWith(
+      await expect(Token.deploy("Token", "TKN", ethers.ZeroAddress)).to.be.revertedWith(
         "Invalid governance token address"
       );
     });
@@ -55,7 +53,7 @@ describe("Token Tests", function () {
 
   describe("Minting", function () {
     it("Should allow owner to mint to whitelisted address", async function () {
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, referenceId);
 
       await token.mint(user1.address, ethers.parseEther("100"));
       expect(await token.balanceOf(user1.address)).to.equal(ethers.parseEther("100"));
@@ -68,7 +66,7 @@ describe("Token Tests", function () {
     });
 
     it("Should not allow non-owner to mint", async function () {
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, referenceId);
 
       await expect(
         token.connect(user1).mint(user1.address, ethers.parseEther("100"))
@@ -79,8 +77,8 @@ describe("Token Tests", function () {
   describe("Transfer", function () {
     beforeEach(async function () {
       // Whitelist user1 and user2
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
-      await governanceToken.addAddress(user2.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, referenceId);
+      await governanceToken.addAddress(user2.address, referenceId);
 
       // Mint tokens to user1
       await token.mint(user1.address, ethers.parseEther("1000"));
@@ -121,8 +119,8 @@ describe("Token Tests", function () {
   describe("TransferFrom", function () {
     beforeEach(async function () {
       // Whitelist user1 and user2
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
-      await governanceToken.addAddress(user2.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, referenceId);
+      await governanceToken.addAddress(user2.address, referenceId);
 
       // Mint tokens to user1
       await token.mint(user1.address, ethers.parseEther("1000"));
@@ -176,11 +174,11 @@ describe("Token Tests", function () {
   describe("Whitelist Integration", function () {
     it("Should respect dynamic whitelist changes", async function () {
       // Whitelist and mint to user1
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, referenceId);
       await token.mint(user1.address, ethers.parseEther("1000"));
 
       // Whitelist user2 and allow transfer
-      await governanceToken.addAddress(user2.address, challenge, hash, signature);
+      await governanceToken.addAddress(user2.address, referenceId);
       await token.connect(user1).transfer(user2.address, ethers.parseEther("100"));
       expect(await token.balanceOf(user2.address)).to.equal(ethers.parseEther("100"));
 
@@ -193,7 +191,7 @@ describe("Token Tests", function () {
       ).to.be.revertedWith("Recipient not whitelisted");
 
       // Re-whitelist user2
-      await governanceToken.addAddress(user2.address, challenge, hash, signature);
+      await governanceToken.addAddress(user2.address, referenceId);
 
       // Transfer should work again
       await token.connect(user1).transfer(user2.address, ethers.parseEther("100"));
