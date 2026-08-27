@@ -28,58 +28,38 @@ describe("GovernanceToken Tests", function () {
 
   describe("Adding Addresses", function () {
     it("Should allow owner to add an address", async function () {
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
+      const referenceId = "kyc-123";
 
-      await expect(
-        governanceToken.addAddress(user1.address, challenge, hash, signature)
-      )
+      await expect(governanceToken.addAddress(user1.address, referenceId))
         .to.emit(governanceToken, "AddressAdded")
-        .withArgs(user1.address, challenge, hash, signature);
+        .withArgs(user1.address, referenceId);
 
       expect(await governanceToken.isWhitelisted(user1.address)).to.be.true;
     });
 
     it("Should not allow non-owner to add an address", async function () {
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
-
       await expect(
-        governanceToken.connect(user1).addAddress(user2.address, challenge, hash, signature)
+        governanceToken.connect(user1).addAddress(user2.address, "ref")
       ).to.be.revertedWithCustomError(governanceToken, "OwnableUnauthorizedAccount");
     });
 
     it("Should not allow adding zero address", async function () {
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
-
       await expect(
-        governanceToken.addAddress(ethers.ZeroAddress, challenge, hash, signature)
+        governanceToken.addAddress(ethers.ZeroAddress, "ref")
       ).to.be.revertedWith("Cannot whitelist zero address");
     });
 
     it("Should not allow adding the same address twice", async function () {
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
-
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, "ref-1");
 
       await expect(
-        governanceToken.addAddress(user1.address, challenge, hash, signature)
+        governanceToken.addAddress(user1.address, "ref-2")
       ).to.be.revertedWith("Address already whitelisted");
     });
 
     it("Should add multiple different addresses", async function () {
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
-
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
-      await governanceToken.addAddress(user2.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, "ref-1");
+      await governanceToken.addAddress(user2.address, "ref-2");
 
       expect(await governanceToken.isWhitelisted(user1.address)).to.be.true;
       expect(await governanceToken.isWhitelisted(user2.address)).to.be.true;
@@ -88,19 +68,13 @@ describe("GovernanceToken Tests", function () {
 
   describe("Removing Addresses", function () {
     beforeEach(async function () {
-      // Add user1 to whitelist
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, "kyc-123");
     });
 
     it("Should allow owner to remove an address", async function () {
       const reason = "Suspicious activity detected";
 
-      await expect(
-        governanceToken.removeAddress(user1.address, reason)
-      )
+      await expect(governanceToken.removeAddress(user1.address, reason))
         .to.emit(governanceToken, "AddressRemoved")
         .withArgs(user1.address, reason);
 
@@ -108,32 +82,22 @@ describe("GovernanceToken Tests", function () {
     });
 
     it("Should not allow non-owner to remove an address", async function () {
-      const reason = "Suspicious activity detected";
-
       await expect(
-        governanceToken.connect(user1).removeAddress(user1.address, reason)
+        governanceToken.connect(user1).removeAddress(user1.address, "reason")
       ).to.be.revertedWithCustomError(governanceToken, "OwnableUnauthorizedAccount");
     });
 
     it("Should not allow removing an address that is not whitelisted", async function () {
-      const reason = "Test reason";
-
       await expect(
-        governanceToken.removeAddress(user2.address, reason)
+        governanceToken.removeAddress(user2.address, "reason")
       ).to.be.revertedWith("Address not whitelisted");
     });
 
     it("Should allow re-adding an address after removal", async function () {
-      const reason = "Test removal";
-      await governanceToken.removeAddress(user1.address, reason);
-
+      await governanceToken.removeAddress(user1.address, "removed");
       expect(await governanceToken.isWhitelisted(user1.address)).to.be.false;
 
-      const challenge = "new-challenge";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("new-data"));
-      const signature = ethers.toUtf8Bytes("new-signature");
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
-
+      await governanceToken.addAddress(user1.address, "re-added");
       expect(await governanceToken.isWhitelisted(user1.address)).to.be.true;
     });
   });
@@ -144,11 +108,7 @@ describe("GovernanceToken Tests", function () {
     });
 
     it("Should return true for whitelisted address", async function () {
-      const challenge = "test-challenge-123";
-      const hash = ethers.keccak256(ethers.toUtf8Bytes("test-data"));
-      const signature = ethers.toUtf8Bytes("test-signature");
-
-      await governanceToken.addAddress(user1.address, challenge, hash, signature);
+      await governanceToken.addAddress(user1.address, "kyc-123");
       expect(await governanceToken.isWhitelisted(user1.address)).to.be.true;
     });
   });
