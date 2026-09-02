@@ -18,17 +18,18 @@ class PolicyRegistryContract {
     return this.contract.grantRole(role, address);
   }
 
-  async setAllowed(policyId, account, allowed, signer) {
+  async setAllowed(policyLabel, account, allowed, signer) {
     const c = signer ? this.contract.connect(signer) : this.contract;
-    return c.setAllowed(policyId, account, allowed);
+    return c.setAllowed(policyLabel, account, allowed);
   }
 
-  async setAllowedBatch(policyId, accounts, allowed, signer) {
+  async setAllowedBatch(policyLabel, accounts, allowed, signer) {
     const c = signer ? this.contract.connect(signer) : this.contract;
-    return c.setAllowedBatch(policyId, accounts, allowed);
+    return c.setAllowedBatch(policyLabel, accounts, allowed);
   }
 
-  async isAllowed(policyId, account) {
+  async isAllowed(policyLabel, account) {
+    const policyId = ethers.keccak256(ethers.toUtf8Bytes(policyLabel));
     return this.contract.isAllowed(policyId, account);
   }
 }

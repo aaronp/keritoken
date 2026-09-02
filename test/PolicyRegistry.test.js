@@ -3,8 +3,10 @@ const { ethers } = require('hardhat');
 const { PolicyRegistryContract } = require('./helpers/policy-contracts');
 
 describe('PolicyRegistry', function () {
-  const POLICY_A = ethers.keccak256(ethers.toUtf8Bytes('policy-a-said'));
-  const POLICY_B = ethers.keccak256(ethers.toUtf8Bytes('policy-b-said'));
+  const POLICY_A = 'policy-a-said';
+  const POLICY_B = 'policy-b-said';
+  const POLICY_A_HASH = ethers.keccak256(ethers.toUtf8Bytes(POLICY_A));
+  const POLICY_B_HASH = ethers.keccak256(ethers.toUtf8Bytes(POLICY_B));
   let registry, owner, updater, alice, bob;
 
   beforeEach(async function () {
@@ -33,10 +35,10 @@ describe('PolicyRegistry', function () {
   });
 
   describe('setAllowed', function () {
-    it('sets eligibility and emits event', async function () {
+    it('hashes the label internally and emits event with both hash and label', async function () {
       await expect(registry.setAllowed(POLICY_A, alice.address, true, updater))
         .to.emit(registry.contract, 'EligibilityUpdated')
-        .withArgs(POLICY_A, alice.address, true);
+        .withArgs(POLICY_A_HASH, alice.address, true, POLICY_A);
       expect(await registry.isAllowed(POLICY_A, alice.address)).to.be.true;
     });
 

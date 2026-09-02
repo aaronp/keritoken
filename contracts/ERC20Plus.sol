@@ -15,11 +15,11 @@ contract ERC20Plus is ERC20, AccessControl {
         string memory name_,
         string memory symbol_,
         address policyRegistry_,
-        bytes32 policyId_
+        string memory policyLabel_
     ) ERC20(name_, symbol_) {
         require(policyRegistry_ != address(0), "Zero registry address");
         policyRegistry = IPolicyRegistry(policyRegistry_);
-        policyId = policyId_;
+        policyId = keccak256(bytes(policyLabel_));
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
